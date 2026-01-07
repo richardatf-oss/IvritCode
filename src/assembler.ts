@@ -21,4 +21,35 @@ export function assemble(tokens: Token[]): Instr[] {
     if (!op) fail("Unknown opcode", t);
 
     // PUSH: א <digit>
-    if (op === "PUSH")
+    if (op === "PUSH") {
+      const next = tokens[i + 1];
+      if (!next) fail("PUSH expects a digit letter after א", t);
+
+      const v = digitMap[next.base];
+      if (v === undefined) fail("Invalid digit letter after PUSH", next);
+
+      program.push({ op: "PUSH", value: v, mods: t.marks });
+      i++; // consume digit token
+      continue;
+    }
+
+    // JMP/JZ: ט <digit> / י <digit>
+    if (op === "JMP" || op === "JZ") {
+      const next = tokens[i + 1];
+      if (!next) fail(`${op} expects a digit letter offset after the opcode`, t);
+
+      const off = digitMap[next.base];
+      if (off === undefined) fail("Invalid offset digit letter", next);
+
+      // v0: relative forward offset in *instructions*
+      program.push({ op, offset: off, mods: t.marks } as any);
+      i++; // consume digit token
+      continue;
+    }
+
+    // All other single-letter ops
+    program.push({ op, mods: t.marks } as any);
+  }
+
+  return program;
+}
