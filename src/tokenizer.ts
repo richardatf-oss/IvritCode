@@ -1,53 +1,38 @@
-export type Token = {
-  base: string;      // Hebrew letter
-  marks: string[];   // niqqud + cantillation marks collected
-  raw: string;       // base + marks in original order
-  index: number;     // token index in stream
-};
+// src/tokenizer.ts
 
-const isHebrewLetter = (cp: string) => cp >= "\u05D0" && cp <= "\u05EA";
-
-// Niqqud + cantillation roughly live in these ranges
-const isHebrewMark = (cp: string) =>
-  (cp >= "\u0591" && cp <= "\u05BD") || // cantillation + some points
-  cp === "\u05BF" ||                    // rafe
-  (cp >= "\u05C1" && cp <= "\u05C7");   // shin/sin dots + niqqud
+export type Token =
+  | { kind: "label"; name: string }
+  | { kind: "instr"; op: string; args: string[] };
 
 export function tokenize(source: string): Token[] {
-  // NFD splits letters + combining marks so we can parse reliably
-  const s = source.normalize("NFD");
+  const lines = source.split(/\r?\n/);
   const tokens: Token[] = [];
 
-  let i = 0;
-  let tIndex = 0;
+  for (const rawLine of lines) {
+    // strip comments starting with ; or #
+    const line = rawLine.split(";")[0].split("#")[0].trim();
+    if (!line) continue;
 
-  while (i < s.length) {
-    const ch = s[i];
+    const parts = line.split(/\s+/);
+    if (parts.length === 0) continue;
 
-    // Skip whitespace and common punctuation
-    if (/\s/.test(ch) || /[.,;:!?"'()[\]{}<>|\\/]/.test(ch)) {
-      i++;
+    // label: "loop:"
+    if (parts[0].endsWith(":")) {
+      const name = parts[0].slice(0, -1);
+      if (!name) continue;
+      tokens.push({ kind: "label", name });
+      if (parts.length > 1) {
+        // label + instruction on same line, e.g. "loop: PUSH 1"
+        const op = parts[1].toUpperCase();
+        const args = parts.slice(2);
+        tokens.push({ kind: "instr", op, args });
+      }
       continue;
     }
 
-    // Ignore unknown chars in v0
-    if (!isHebrewLetter(ch)) {
-      i++;
-      continue;
-    }
-
-    const base = ch;
-    const marks: string[] = [];
-    let raw = base;
-    i++;
-
-    while (i < s.length && isHebrewMark(s[i])) {
-      marks.push(s[i]);
-      raw += s[i];
-      i++;
-    }
-
-    tokens.push({ base, marks, raw, index: tIndex++ });
+    const op = parts[0].toUpperCase();
+    const args = parts.slice(1);
+    tokens.push({ kind: "instr", op, args });
   }
 
   return tokens;
