@@ -1,5 +1,5 @@
 // src/vm.ts
-import type { Instr } from "./assembler.js";
+import type { Instr, OpCode } from "./assembler.js";
 
 // -------------------------
 // Basic numeric VM
@@ -33,7 +33,7 @@ export function run(program: Instr[], opts: VMOptions = {}): number[] {
       console.log(`NUMERIC ip=${ip} op=${ins.op} stack=[${stack.join(",")}]`);
     }
 
-    switch (ins.op) {
+    switch (ins.op as OpCode) {
       case "PUSH":
         stack.push(ins.value ?? 0);
         ip++;
@@ -89,6 +89,13 @@ export function run(program: Instr[], opts: VMOptions = {}): number[] {
       case "HALT":
         return out;
 
+      // Ramchal opcodes are ignored in plain run()
+      case "MITZVAH":
+      case "AVEIRAH":
+      case "TICK":
+        ip++;
+        break;
+
       default:
         throw new Error(`Unknown opcode: ${ins.op}`);
     }
@@ -112,8 +119,8 @@ export interface Soul {
 }
 
 export interface WorldState {
-  light: number;         // revealed good
-  concealment: number;   // hiddenness
+  light: number;
+  concealment: number;
   stage: Stage;
   tick: number;
 }
@@ -136,15 +143,12 @@ function clamp01(x: number): number {
   return x < 0 ? 0 : x > 1 ? 1 : x;
 }
 
-// Bechira window: where judgment applies
 export function isBechiraZone(clarity: number): boolean {
   return clarity >= 0.25 && clarity <= 0.85;
 }
 
-// Reward / onesh proposal
 export function judgeChoice(ev: ChoiceEvent): JudgmentResult {
   if (!isBechiraZone(ev.clarityAtChoice)) {
-    // No real bechira → no judgment
     return {
       deltaMerit: 0,
       deltaDebt: 0,
@@ -277,8 +281,8 @@ export function runRamchal(
       );
     }
 
-    switch (ins.op) {
-      // numeric ops (same as basic VM)
+    switch (ins.op as OpCode) {
+      // numeric ops
       case "PUSH":
         stack.push(ins.value ?? 0);
         ip++;
@@ -320,11 +324,19 @@ export function runRamchal(
         break;
       }
 
-      // -----------------
-      // Ramchal opcodes
-      // -----------------
+      case "JMP":
+        ip = ins.target ?? ip + 1;
+        break;
 
-      // Stack: [soulId, clarity]  (soulId is numeric but we stringify it)
+      case "JZ": {
+        const v = pop();
+        if (v === 0) ip = ins.target ?? ip + 1;
+        else ip++;
+        break;
+      }
+
+      // Ramchal ops
+      // stack: [soulId, clarity]
       case "MITZVAH": {
         const clarity = pop();
         const soulIdNum = pop();
@@ -371,7 +383,6 @@ export function runRamchal(
         break;
       }
 
-      // Advance hashgacha/history one step
       case "TICK":
         world = advanceHistory(world);
         ip++;
