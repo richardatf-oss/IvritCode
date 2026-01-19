@@ -1,36 +1,33 @@
 // src/ivrit/ramchalDemo.ts
-import type { Instr } from "../assembler.js";
-import { runRamchal } from "../vm.js";
+import { assemble } from "../assembler.js";
+import { runRamchal, type Soul } from "../vm.js";
+
+const DEMO_SRC = `
+; soul 1 does a mitzvah at clarity 0.6
+PUSH 1
+PUSH 0.6
+MITZVAH
+TICK
+
+; same soul does an aveirah at clarity 0.6
+PUSH 1
+PUSH 0.6
+AVEIRAH
+TICK
+
+HALT
+`;
 
 export function runRamchalDemo() {
-  // Program:
-  // soul "1" does a mitzvah with clarity 0.6
-  // advance history
-  // soul "1" does an aveirah with clarity 0.6
-  // advance history
-  // halt
-  const program: Instr[] = [
-    { op: "PUSH", value: 1 },     // soulId
-    { op: "PUSH", value: 0.6 },   // clarity
-    { op: "MITZVAH" },
+  const program = assemble(DEMO_SRC);
 
-    { op: "TICK" },
-
-    { op: "PUSH", value: 1 },     // soulId
-    { op: "PUSH", value: 0.6 },   // clarity
-    { op: "AVEIRAH" },
-
-    { op: "TICK" },
-
-    { op: "HALT" },
+  const initialSouls: Soul[] = [
+    { id: "1", freeWillLevel: 0.8, clarity: 0.5, merit: 0, debt: 0 },
   ];
 
   const result = runRamchal(program, {
     trace: true,
-    initialWorld: { light: 0, concealment: 0, stage: "OlamHaZeh", tick: 0 },
-    initialSouls: [
-      { id: "1", freeWillLevel: 0.8, clarity: 0.5, merit: 0, debt: 0 },
-    ],
+    initialSouls,
   });
 
   console.log("WORLD:", result.world);
