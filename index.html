@@ -227,7 +227,7 @@
       }
 
       button#run-btn {
-        margin-top: 0.3rem;
+        margin-top: 0.45rem;
         padding: 0.45rem 0.9rem;
         border-radius: 999px;
         border: 1px solid var(--accent-soft);
@@ -241,9 +241,20 @@
         filter: brightness(1.05);
       }
 
+      .how-to-list {
+        margin: 0.5rem 0 0.7rem;
+        padding-left: 1.1rem;
+        color: var(--text-muted);
+        font-size: 0.9rem;
+      }
+
+      .how-to-list li {
+        margin: 0.15rem 0;
+      }
+
       /* Trace block */
       details {
-        margin-top: 0.6rem;
+        margin-top: 0.9rem;
         border-radius: 0.7rem;
         border: 1px solid var(--border-subtle);
         background: var(--bg-soft);
@@ -292,6 +303,12 @@
         font-size: 0.8rem;
         white-space: pre-wrap;
         word-break: break-word;
+      }
+
+      .trace-legend {
+        margin-top: 0.5rem;
+        font-size: 0.8rem;
+        color: var(--text-muted);
       }
 
       /* Opcode table */
@@ -352,50 +369,64 @@
       <main>
         <!-- HERO + INTERACTIVE DEMO -->
         <section class="hero">
+          <!-- Left: plain-language explanation -->
           <div class="card hero-text">
-            <h2 class="tagline">What is IvritCode?</h2>
+            <h2 class="tagline">What’s happening on this page?</h2>
             <p>
-              IvritCode treats the Hebrew alphabet as a tiny instruction set.
-              Each letter is a command. The dots and melodies of the text
-              become modifiers. Together they form a programmable, verifiable
-              way to describe processes in the language of the letters
-              themselves.
+              This page lets you watch a tiny “machine” made from Hebrew letters
+              work on a few numbers that you choose.
             </p>
             <p>
-              On the surface, it can be played with like a toy—change some
-              numbers, watch the letters work. Under the hood, its execution
-              trace is designed to live comfortably inside modern tools like
-              finite-field virtual machines and zero-knowledge proofs.
+              Each letter is treated like an instruction. The little program we
+              run here is:
+            </p>
+            <pre style="margin: 0.35rem 0; font-size: 0.9rem;">
+א → ב → ג → ד → סבב</pre>
+            <p>
+              You don’t need to know math or coding to play with it. Think of
+              it like this:
             </p>
             <ul class="hero-bullets">
-              <li>🌱 <strong>For the curious:</strong> letters as tiny machines.</li>
-              <li>🧠 <strong>For developers:</strong> a clear, field-based VM.</li>
-              <li>🔐 <strong>For cryptographers:</strong> AIR / zk-VM friendly.</li>
+              <li><strong>א</strong> gets the machine ready and “locks in” that this run belongs to this program.</li>
+              <li><strong>ב</strong> adds your first two numbers together.</li>
+              <li><strong>ג</strong> multiplies them.</li>
+              <li><strong>ד</strong> stirs the numbers around.</li>
+              <li><strong>סבב</strong> does a deeper “mix” step used in modern cryptography.</li>
             </ul>
+            <p style="margin-top: 0.6rem; color: var(--text-muted); font-size: 0.9rem;">
+              Nothing here touches any accounts, wallets, or personal data. It’s
+              just numbers and letters running in your browser.
+            </p>
             <div class="chip-row">
-              <span class="chip">Hebrew letters → opcodes</span>
-              <span class="chip">Finite field arithmetic</span>
-              <span class="chip">Poseidon-style rounds</span>
+              <span class="chip">No signup</span>
+              <span class="chip">No wallet</span>
+              <span class="chip">Just letters and math</span>
             </div>
           </div>
 
-          <!-- INTERACTIVE DEMO CARD -->
+          <!-- Right: interactive demo with clear instructions -->
           <div class="card">
-            <h2>Try It: Letters Running on Your Numbers</h2>
+            <h2>Try It: Let the Letters Run</h2>
             <p class="muted">
-              Set the starting values of the four visible registers, then run
-              the demo program:
+              You choose four starting numbers. The machine runs the letters on
+              them and shows every step it took.
             </p>
-            <pre style="margin: 0 0 0.35rem; font-size: 0.85rem;">
-א → ב → ג → ד → סבב</pre>
+            <ol class="how-to-list">
+              <li>Type any whole numbers you like in the boxes.</li>
+              <li>Click <strong>Run IvritCode Program</strong>.</li>
+              <li>
+                Open “Show raw execution trace” to see, line by line, what the
+                machine did.
+              </li>
+            </ol>
 
             <div class="controls">
               <div class="control-group">
-                <label for="r0-input">R0 (first value)</label>
+                <label for="r0-input">R0 (first number)</label>
                 <input id="r0-input" type="number" value="1" />
               </div>
               <div class="control-group">
-                <label for="r1-input">R1 (second value)</label>
+                <label for="r1-input">R1 (second number)</label>
                 <input id="r1-input" type="number" value="2" />
               </div>
               <div class="control-group">
@@ -412,11 +443,20 @@
               Run IvritCode Program
             </button>
 
-            <details style="margin-top: 0.9rem;">
+            <details>
               <summary><span>Show raw execution trace</span></summary>
               <div class="details-body">
                 <div id="app">
-                  <!-- main.js will render the trace here -->
+                  <!-- main.js renders the trace here -->
+                </div>
+                <div class="trace-legend">
+                  <strong>How to read a line:</strong><br />
+                  <code>t=3</code> – step number in the run<br />
+                  <code>pc</code> – which letter we are on in the program<br />
+                  <code>op</code> – the letter that ran at this step<br />
+                  <code>regs=[R0,R1,R2,R3]</code> – the four visible numbers<br />
+                  <code>c, h, z</code> – hidden numbers the machine uses
+                  internally (for cryptography and consistency).
                 </div>
               </div>
             </details>
@@ -426,95 +466,116 @@
         <!-- CURIOUS / DEVS + OPCODE TABLE -->
         <section class="section-grid">
           <div class="card">
-            <h2 class="section-title">For the Curious</h2>
+            <h2 class="section-title">If You’re Just Curious</h2>
             <p class="muted">
-              You can think of IvritCode as an imaginative bridge between:
+              At a simple level, IvritCode is a way of saying:
             </p>
             <div class="list-columns">
               <ul>
-                <li>The letters of the Aleph-Bet</li>
-                <li>Simple arithmetic (add, multiply, mix)</li>
-                <li>Stories about how information flows</li>
+                <li>“What if the Aleph-Bet were a tiny machine?”</li>
+                <li>“What if a story was also a set of instructions?”</li>
+                <li>“What if we could watch letters move numbers around?”</li>
               </ul>
               <ul>
-                <li>Invisible “hidden state” (like memory)</li>
-                <li>Repeatable experiments</li>
-                <li>Future visual tools and diagrams</li>
+                <li>No background knowledge required.</li>
+                <li>You cannot break anything by experimenting.</li>
+                <li>Every run is repeatable: same letters, same numbers, same result.</li>
               </ul>
             </div>
             <p class="muted" style="margin-top: 0.8rem;">
-              Over time, IvritCode will grow a visual playground where you can
-              drop letters onto a line and watch the machine come to life
-              without ever typing a line of code.
+              Later, this site will grow a visual playground where you can drag
+              letters onto a line, press play, and see the machine animate its
+              steps without looking at any code at all.
             </p>
           </div>
 
           <div class="card">
-            <h2 class="section-title">Opcode Table (v0 Demo)</h2>
+            <h2 class="section-title">If You’re a Developer or Researcher</h2>
             <p class="muted">
-              The current prototype defines a small set of letters with precise
-              semantics inside the virtual machine:
+              Under the hood, everything you see here is driven by a small
+              virtual machine written in TypeScript:
             </p>
-            <table class="opcode-table">
-              <thead>
-                <tr>
-                  <th>Letter</th>
-                  <th>Name</th>
-                  <th>Role in VM</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>א</td>
-                  <td>Aleph</td>
-                  <td>
-                    Semantic no-op (registers unchanged); updates hidden
-                    state to bind the run to this program &amp; location.
-                  </td>
-                </tr>
-                <tr>
-                  <td>ב</td>
-                  <td>Bet</td>
-                  <td>
-                    <code>R0 = R0 + R1</code>. Simple addition of the first two
-                    registers.
-                  </td>
-                </tr>
-                <tr>
-                  <td>ג</td>
-                  <td>Gimel</td>
-                  <td>
-                    <code>R0 = R0 × R1</code>. Multiplication in the finite
-                    field.
-                  </td>
-                </tr>
-                <tr>
-                  <td>ד</td>
-                  <td>Dalet</td>
-                  <td>
-                    Mixes <code>R0,R1,R2</code> linearly for diffusion (a small
-                    “stirring” step).
-                  </td>
-                </tr>
-                <tr>
-                  <td>סבב</td>
-                  <td>Sovev</td>
-                  <td>
-                    Full Poseidon-style round over
-                    <code>[R0,R1,R2,R3,C]</code>, used as a cryptographic
-                    permutation.
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <ul class="hero-bullets" style="margin-top: 0.25rem;">
+              <li>
+                Each letter in the demo has a precise definition in
+                <code>src/vm.ts</code>.
+              </li>
+              <li>
+                Arithmetic is done in a finite field (see
+                <code>src/field.ts</code>).
+              </li>
+              <li>
+                The deeper “mixing” step <strong>סבב</strong> uses a
+                Poseidon-style round function (<code>src/round.ts</code>).
+              </li>
+            </ul>
             <p class="muted" style="margin-top: 0.7rem;">
-              Implementation details live in
-              <code>src/vm.ts</code>, <code>src/round.ts</code>, and
-              <code>src/field.ts</code>. The design keeps everything
-              finite-field-friendly so the execution trace can be expressed as
-              an AIR for zk-VMs.
+              The VM is designed so its execution trace can be expressed as an
+              AIR (Arithmetic Intermediate Representation) for zk-VM style
+              proofs.
             </p>
           </div>
+        </section>
+
+        <!-- OPCODE TABLE -->
+        <section class="card">
+          <h2 class="section-title">Letters Used in This Demo</h2>
+          <p class="muted">
+            This first version only uses a handful of letters. More will be
+            added later, but these are enough to see the idea:
+          </p>
+          <table class="opcode-table">
+            <thead>
+              <tr>
+                <th>Letter</th>
+                <th>Name</th>
+                <th>What it does in the machine (plain language)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>א</td>
+                <td>Aleph</td>
+                <td>
+                  Leaves your four numbers as they are, but secretly updates
+                  some hidden numbers so this run is tied to this program and
+                  moment in the code.
+                </td>
+              </tr>
+              <tr>
+                <td>ב</td>
+                <td>Bet</td>
+                <td>
+                  Adds the first two numbers together and stores the result back
+                  into R0.
+                </td>
+              </tr>
+              <tr>
+                <td>ג</td>
+                <td>Gimel</td>
+                <td>
+                  Multiplies the first two numbers and stores the result in R0.
+                </td>
+              </tr>
+              <tr>
+                <td>ד</td>
+                <td>Dalet</td>
+                <td>
+                  Takes R0, R1, and R2 and stirs them together using a simple
+                  linear recipe. R3 is left alone.
+                </td>
+              </tr>
+              <tr>
+                <td>סבב</td>
+                <td>Sovev</td>
+                <td>
+                  Runs a deeper mixing step over all four numbers plus one
+                  hidden number. This is the kind of step used inside modern
+                  hash functions.
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </section>
 
         <div class="footer">
