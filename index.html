@@ -8,11 +8,10 @@
     <link rel="stylesheet" href="./styles.css" />
 
     <style>
-      /* Layout + fallback styles (plays nicely with styles.css) */
       :root {
         --bg: #05060b;
         --bg-soft: #101320;
-        --bg-softer: #141726;
+        --bg-softer: #16192a;
         --border-subtle: rgba(255, 255, 255, 0.12);
         --accent: #8dd7ff;
         --accent-soft: rgba(141, 215, 255, 0.16);
@@ -91,12 +90,12 @@
 
       .hero {
         display: grid;
-        grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.2fr);
+        grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.4fr);
         gap: 1.5rem;
         align-items: flex-start;
       }
 
-      @media (max-width: 800px) {
+      @media (max-width: 900px) {
         .hero {
           grid-template-columns: minmax(0, 1fr);
         }
@@ -155,7 +154,7 @@
 
       .section-grid {
         display: grid;
-        grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.1fr);
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.1fr);
         gap: 1.5rem;
       }
 
@@ -179,7 +178,6 @@
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
         gap: 0.75rem;
-        margin-top: 0.5rem;
       }
 
       .list-columns ul {
@@ -193,7 +191,57 @@
         margin: 0.15rem 0;
       }
 
-      /* VM trace details block */
+      /* Interactive controls */
+      .controls {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.6rem;
+        margin: 0.4rem 0 0.8rem;
+      }
+
+      @media (max-width: 640px) {
+        .controls {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      .control-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        font-size: 0.85rem;
+      }
+
+      .control-group label {
+        color: var(--text-muted);
+      }
+
+      .control-group input[type="number"] {
+        width: 100%;
+        border-radius: 0.45rem;
+        border: 1px solid var(--border-subtle);
+        padding: 0.25rem 0.4rem;
+        background: var(--bg-softer);
+        color: var(--text-main);
+        font-size: 0.9rem;
+      }
+
+      button#run-btn {
+        margin-top: 0.3rem;
+        padding: 0.45rem 0.9rem;
+        border-radius: 999px;
+        border: 1px solid var(--accent-soft);
+        background: linear-gradient(90deg, #174463, #2878a3);
+        color: #f7fbff;
+        font-size: 0.9rem;
+        cursor: pointer;
+      }
+
+      button#run-btn:hover {
+        filter: brightness(1.05);
+      }
+
+      /* Trace block */
       details {
         margin-top: 0.6rem;
         border-radius: 0.7rem;
@@ -246,6 +294,30 @@
         word-break: break-word;
       }
 
+      /* Opcode table */
+      table.opcode-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 0.5rem;
+        font-size: 0.86rem;
+      }
+
+      table.opcode-table th,
+      table.opcode-table td {
+        padding: 0.4rem 0.35rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      table.opcode-table th {
+        text-align: left;
+        font-weight: 600;
+        color: var(--text-muted);
+      }
+
+      table.opcode-table td:nth-child(1) {
+        font-size: 1rem;
+      }
+
       .footer {
         margin-top: 2rem;
         font-size: 0.75rem;
@@ -278,7 +350,7 @@
       </header>
 
       <main>
-        <!-- Hero: layperson-friendly explanation -->
+        <!-- HERO + INTERACTIVE DEMO -->
         <section class="hero">
           <div class="card hero-text">
             <h2 class="tagline">What is IvritCode?</h2>
@@ -290,18 +362,15 @@
               themselves.
             </p>
             <p>
-              You don’t need to know cryptography to enjoy it. At the surface,
-              IvritCode is a playful way to see “code” in Hebrew. Under the
-              hood, it is designed to be compatible with modern tools like
-              zero-knowledge proofs and finite-field arithmetic.
+              On the surface, it can be played with like a toy—change some
+              numbers, watch the letters work. Under the hood, its execution
+              trace is designed to live comfortably inside modern tools like
+              finite-field virtual machines and zero-knowledge proofs.
             </p>
             <ul class="hero-bullets">
-              <li>🌱 <strong>For the curious:</strong> explore how letters can
-              behave like tiny machines.</li>
-              <li>🧠 <strong>For developers:</strong> a field-based VM with a
-              clear, auditable semantics.</li>
-              <li>🔐 <strong>For cryptographers:</strong> a language whose
-              execution trace is ready for AIR / zk-VM style proofs.</li>
+              <li>🌱 <strong>For the curious:</strong> letters as tiny machines.</li>
+              <li>🧠 <strong>For developers:</strong> a clear, field-based VM.</li>
+              <li>🔐 <strong>For cryptographers:</strong> AIR / zk-VM friendly.</li>
             </ul>
             <div class="chip-row">
               <span class="chip">Hebrew letters → opcodes</span>
@@ -310,34 +379,41 @@
             </div>
           </div>
 
-          <!-- Quick demo card -->
+          <!-- INTERACTIVE DEMO CARD -->
           <div class="card">
-            <h2>Quick Demo (No Coding Needed)</h2>
+            <h2>Try It: Letters Running on Your Numbers</h2>
             <p class="muted">
-              Below is a tiny sample “program”:
+              Set the starting values of the four visible registers, then run
+              the demo program:
             </p>
             <pre style="margin: 0 0 0.35rem; font-size: 0.85rem;">
 א → ב → ג → ד → סבב</pre>
-            <p class="muted" style="margin-top: 0.35rem;">
-              Think of it as:
-            </p>
-            <ul class="hero-bullets" style="margin-top: 0.25rem;">
-              <li><strong>א</strong> – silently binds the run to this program.</li>
-              <li><strong>ב</strong> – adds two registers.</li>
-              <li><strong>ג</strong> – multiplies them.</li>
-              <li><strong>ד</strong> – mixes values together.</li>
-              <li><strong>סבב</strong> – runs a full cryptographic “round”
-                  over the state.</li>
-            </ul>
-            <p class="muted">
-              IvritCode’s virtual machine executes this sequence and records a
-              step-by-step trace.
-            </p>
 
-            <details>
-              <summary>
-                <span>Show raw execution trace</span>
-              </summary>
+            <div class="controls">
+              <div class="control-group">
+                <label for="r0-input">R0 (first value)</label>
+                <input id="r0-input" type="number" value="1" />
+              </div>
+              <div class="control-group">
+                <label for="r1-input">R1 (second value)</label>
+                <input id="r1-input" type="number" value="2" />
+              </div>
+              <div class="control-group">
+                <label for="r2-input">R2</label>
+                <input id="r2-input" type="number" value="3" />
+              </div>
+              <div class="control-group">
+                <label for="r3-input">R3</label>
+                <input id="r3-input" type="number" value="4" />
+              </div>
+            </div>
+
+            <button id="run-btn" type="button">
+              Run IvritCode Program
+            </button>
+
+            <details style="margin-top: 0.9rem;">
+              <summary><span>Show raw execution trace</span></summary>
               <div class="details-body">
                 <div id="app">
                   <!-- main.js will render the trace here -->
@@ -347,7 +423,7 @@
           </div>
         </section>
 
-        <!-- For the curious / for developers -->
+        <!-- CURIOUS / DEVS + OPCODE TABLE -->
         <section class="section-grid">
           <div class="card">
             <h2 class="section-title">For the Curious</h2>
@@ -362,52 +438,81 @@
               </ul>
               <ul>
                 <li>Invisible “hidden state” (like memory)</li>
-                <li>Repeatable experiments: same letters, same result</li>
-                <li>Future visual tools and interactive diagrams</li>
+                <li>Repeatable experiments</li>
+                <li>Future visual tools and diagrams</li>
               </ul>
             </div>
             <p class="muted" style="margin-top: 0.8rem;">
-              Over time, IvritCode will gain a visual playground where you can
+              Over time, IvritCode will grow a visual playground where you can
               drop letters onto a line and watch the machine come to life
               without ever typing a line of code.
             </p>
           </div>
 
           <div class="card">
-            <h2 class="section-title">For Developers &amp; Researchers</h2>
+            <h2 class="section-title">Opcode Table (v0 Demo)</h2>
             <p class="muted">
-              Under the hood, IvritCode is:
+              The current prototype defines a small set of letters with precise
+              semantics inside the virtual machine:
             </p>
-            <ul class="hero-bullets" style="margin-top: 0.25rem;">
-              <li>
-                A small virtual machine where
-                <strong>each letter has precise semantics</strong>
-                (see <code>src/vm.ts</code>).
-              </li>
-              <li>
-                Built on finite-field arithmetic
-                (see <code>src/field.ts</code>) with
-                Poseidon-inspired round functions
-                (see <code>src/round.ts</code>).
-              </li>
-              <li>
-                Designed so its execution trace can be expressed as an
-                <strong>AIR</strong> (Arithmetic Intermediate Representation),
-                suitable for zk-VMs and proof systems.
-              </li>
-            </ul>
-
+            <table class="opcode-table">
+              <thead>
+                <tr>
+                  <th>Letter</th>
+                  <th>Name</th>
+                  <th>Role in VM</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>א</td>
+                  <td>Aleph</td>
+                  <td>
+                    Semantic no-op (registers unchanged); updates hidden
+                    state to bind the run to this program &amp; location.
+                  </td>
+                </tr>
+                <tr>
+                  <td>ב</td>
+                  <td>Bet</td>
+                  <td>
+                    <code>R0 = R0 + R1</code>. Simple addition of the first two
+                    registers.
+                  </td>
+                </tr>
+                <tr>
+                  <td>ג</td>
+                  <td>Gimel</td>
+                  <td>
+                    <code>R0 = R0 × R1</code>. Multiplication in the finite
+                    field.
+                  </td>
+                </tr>
+                <tr>
+                  <td>ד</td>
+                  <td>Dalet</td>
+                  <td>
+                    Mixes <code>R0,R1,R2</code> linearly for diffusion (a small
+                    “stirring” step).
+                  </td>
+                </tr>
+                <tr>
+                  <td>סבב</td>
+                  <td>Sovev</td>
+                  <td>
+                    Full Poseidon-style round over
+                    <code>[R0,R1,R2,R3,C]</code>, used as a cryptographic
+                    permutation.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
             <p class="muted" style="margin-top: 0.7rem;">
-              To run locally:
-            </p>
-            <pre style="margin: 0; font-size: 0.85rem;">
-npm install
-npm run build
-npm start</pre
-            >
-            <p class="muted" style="margin-top: 0.7rem;">
-              Start with <code>src/index.ts</code> to see the demo program, or
-              open <code>src/vm.ts</code> to add new letters and instructions.
+              Implementation details live in
+              <code>src/vm.ts</code>, <code>src/round.ts</code>, and
+              <code>src/field.ts</code>. The design keeps everything
+              finite-field-friendly so the execution trace can be expressed as
+              an AIR for zk-VMs.
             </p>
           </div>
         </section>
@@ -420,14 +525,13 @@ npm start</pre
     </div>
 
     <script>
-      // Set footer year without extra TS wiring
       (function () {
         var el = document.getElementById("year");
         if (el) el.textContent = String(new Date().getFullYear());
       })();
     </script>
 
-    <!-- Bundled JS output from your TypeScript build -->
+    <!-- Bundled JS output -->
     <script src="./main.js"></script>
   </body>
 </html>
