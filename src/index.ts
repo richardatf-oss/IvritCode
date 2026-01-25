@@ -1,6 +1,4 @@
 // src/index.ts
-// Browser demo: interactive IvritCode VM trace.
-
 import { Opcode, Program, runProgram, TraceRow } from "./vm";
 
 function formatRow(i: number, row: TraceRow): string {
@@ -23,12 +21,26 @@ function readInt(id: string, fallback: number): number {
   return Number.isNaN(v) ? fallback : v;
 }
 
-function renderTrace(
-  program: Program,
-  initialRegs: [number, number, number, number]
-): void {
-  const params = { programCommit: 123456789 };
-  const trace = runProgram(program, params, initialRegs);
+function runDemo(): void {
+  const program: Program = [
+    Opcode.Aleph,
+    Opcode.Bet,
+    Opcode.Gimel,
+    Opcode.Dalet,
+    Opcode.Sovev,
+  ];
+
+  const r0 = readInt("r0-input", 1);
+  const r1 = readInt("r1-input", 2);
+  const r2 = readInt("r2-input", 3);
+  const r3 = readInt("r3-input", 4);
+
+  const trace = runProgram(program, { programCommit: 123456789 }, [
+    r0,
+    r1,
+    r2,
+    r3,
+  ]);
 
   const container = document.getElementById("app");
   if (!container) return;
@@ -40,32 +52,8 @@ function renderTrace(
   container.appendChild(pre);
 }
 
-function setup(): void {
-  // Demo program: א → ב → ג → ד → סבב
-  const program: Program = [
-    Opcode.Aleph,
-    Opcode.Bet,
-    Opcode.Gimel,
-    Opcode.Dalet,
-    Opcode.Sovev,
-  ];
+// 🔑 Make it globally callable (THIS IS THE KEY FIX)
+;(window as any).runIvritCode = runDemo;
 
-  const runWithCurrentInputs = () => {
-    const r0 = readInt("r0-input", 1);
-    const r1 = readInt("r1-input", 2);
-    const r2 = readInt("r2-input", 3);
-    const r3 = readInt("r3-input", 4);
-    renderTrace(program, [r0, r1, r2, r3]);
-  };
-
-  const button = document.getElementById("run-btn");
-  if (button) {
-    button.addEventListener("click", runWithCurrentInputs);
-  }
-
-  // Run once on load with the default values
-  runWithCurrentInputs();
-}
-
-// Ensure DOM is ready before wiring handlers
-window.addEventListener("DOMContentLoaded", setup);
+// Optional: run once on load so users see something immediately
+window.addEventListener("DOMContentLoaded", runDemo);
