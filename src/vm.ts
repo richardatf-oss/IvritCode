@@ -1,400 +1,178 @@
 // src/vm.ts
-import type { Instr, OpCode } from "./assembler.js";
+// IvritCode VM core + AIR-like transition checker.
 
-// -------------------------
-// Basic numeric VM
-// -------------------------
+import { add, mul, mod } from "./field";
+import { miniRound3, round5, MiniState3, State5 } from "./round";
 
-export type VMOptions = {
-  trace?: boolean;
-  maxSteps?: number;
-};
+// Opcodes for selected letters.
+// You can add more later; just keep the numbers stable once "locked".
+export enum Opcode {
+  Aleph = 1,   // א
+  Bet   = 2,   // ב
+  Gimel = 3,   // ג
+  Dalet = 4,   // ד
+  Sovev = 10,  // סבב - round function
+}
 
-export function run(program: Instr[], opts: VMOptions = {}): number[] {
-  const stack: number[] = [];
-  const out: number[] = [];
-  let ip = 0;
-  let steps = 0;
-  const maxSteps = opts.maxSteps ?? 100_000;
+// One row in the execution / AIR trace.
+export interface TraceRow {
+  pc: number;         // program counter
+  op: Opcode;         // current op (letter)
+  mod: number;        // modifier bits (niqqud/trope etc., unused for now)
+  regs: [number, number, number, number]; // R0..R3
+  c: number;          // hidden capacity register
+  h: number;          // hidden history register
+  z: number;          // extra hidden word for miniRound3
+}
 
-  const pop = () => {
-    if (stack.length === 0) throw new Error("Stack underflow");
-    return stack.pop() as number;
+// Program is just a list of opcodes for now.
+export type Program = Opcode[];
+
+// "Program commitment" for Aleph binding.
+// For now we just pass a number; in future this is a hash of the bytecode.
+export interface VmParams {
+  programCommit: number;
+}
+
+// ---- VM execution ----
+
+export function initialRow(): TraceRow {
+  return {
+    pc: 0,
+    op: Opcode.Aleph,
+    mod: 0,
+    regs: [0, 0, 0, 0],
+    c: 0,
+    h: 0,
+    z: 0,
   };
-
-  while (ip >= 0 && ip < program.length) {
-    if (steps++ > maxSteps) {
-      throw new Error("Max steps exceeded (possible infinite loop)");
-    }
-
-    const ins = program[ip];
-
-    if (opts.trace) {
-      console.log(`NUMERIC ip=${ip} op=${ins.op} stack=[${stack.join(",")}]`);
-    }
-
-    switch (ins.op as OpCode) {
-      case "PUSH":
-        stack.push(ins.value ?? 0);
-        ip++;
-        break;
-
-      case "ADD": {
-        const b = pop(), a = pop();
-        stack.push(a + b);
-        ip++;
-        break;
-      }
-
-      case "SUB": {
-        const b = pop(), a = pop();
-        stack.push(a - b);
-        ip++;
-        break;
-      }
-
-      case "MUL": {
-        const b = pop(), a = pop();
-        stack.push(a * b);
-        ip++;
-        break;
-      }
-
-      case "DIV": {
-        const b = pop(), a = pop();
-        if (b === 0) throw new Error("Division by zero");
-        stack.push(a / b);
-        ip++;
-        break;
-      }
-
-      case "OUT": {
-        const v = pop();
-        out.push(v);
-        ip++;
-        break;
-      }
-
-      case "JMP":
-        ip = ins.target ?? ip + 1;
-        break;
-
-      case "JZ": {
-        const v = pop();
-        if (v === 0) ip = ins.target ?? ip + 1;
-        else ip++;
-        break;
-      }
-
-      case "HALT":
-        return out;
-
-      // Ramchal opcodes are ignored in plain run()
-      case "MITZVAH":
-      case "AVEIRAH":
-      case "TICK":
-        ip++;
-        break;
-
-      default:
-        throw new Error(`Unknown opcode: ${ins.op}`);
-    }
-  }
-
-  return out;
 }
 
-// -------------------------
-// Ramchal layer
-// -------------------------
+export function step(prev: TraceRow, op: Opcode, params: VmParams, roundIndex: number): TraceRow {
+  const { programCommit } = params;
 
-export type Stage = "OlamHaZeh" | "YemotHaMashiach" | "OlamHaBa";
-
-export interface Soul {
-  id: string;
-  freeWillLevel: number; // 0–1
-  clarity: number;       // 0–1
-  merit: number;
-  debt: number;
-}
-
-export interface WorldState {
-  light: number;
-  concealment: number;
-  stage: Stage;
-  tick: number;
-}
-
-export interface ChoiceEvent {
-  soulId: string;
-  action: "mitzvah" | "aveirah" | "neutral";
-  clarityAtChoice: number;
-}
-
-export interface JudgmentResult {
-  deltaMerit: number;
-  deltaDebt: number;
-  deltaClarity: number;
-  deltaLight: number;
-  deltaConcealment: number;
-}
-
-function clamp01(x: number): number {
-  return x < 0 ? 0 : x > 1 ? 1 : x;
-}
-
-export function isBechiraZone(clarity: number): boolean {
-  return clarity >= 0.25 && clarity <= 0.85;
-}
-
-export function judgeChoice(ev: ChoiceEvent): JudgmentResult {
-  if (!isBechiraZone(ev.clarityAtChoice)) {
-    return {
-      deltaMerit: 0,
-      deltaDebt: 0,
-      deltaClarity: 0,
-      deltaLight: 0,
-      deltaConcealment: 0,
-    };
-  }
-
-  switch (ev.action) {
-    case "mitzvah":
+  switch (op) {
+    case Opcode.Bet: {
+      // Bet: R0 <- R0 + R1 ; PC++
+      const [r0, r1, r2, r3] = prev.regs;
+      const nextR0 = add(r0, r1);
       return {
-        deltaMerit: +1,
-        deltaDebt: 0,
-        deltaClarity: +0.05,
-        deltaLight: +0.1,
-        deltaConcealment: -0.02,
+        pc: prev.pc + 1,
+        op,
+        mod: 0,
+        regs: [nextR0, r1, r2, r3],
+        c: prev.c,
+        h: prev.h,
+        z: prev.z,
       };
-    case "aveirah":
+    }
+
+    case Opcode.Gimel: {
+      // Gimel: R0 <- R0 * R1 ; PC++
+      const [r0, r1, r2, r3] = prev.regs;
+      const nextR0 = mul(r0, r1);
       return {
-        deltaMerit: 0,
-        deltaDebt: +1,
-        deltaClarity: -0.05,
-        deltaLight: -0.05,
-        deltaConcealment: +0.1,
+        pc: prev.pc + 1,
+        op,
+        mod: 0,
+        regs: [nextR0, r1, r2, r3],
+        c: prev.c,
+        h: prev.h,
+        z: prev.z,
       };
-    default:
+    }
+
+    case Opcode.Dalet: {
+      // Dalet: linear mix of R0..R2 into R0..R2; R3 unchanged.
+      const [r0, r1, r2, r3] = prev.regs;
+      const m0 = mod(r0 + r1 + r2);
+      const m1 = mod(r0 + 2 * r1 + 3 * r2);
+      const m2 = mod(r0 + 3 * r1 + 5 * r2);
       return {
-        deltaMerit: 0,
-        deltaDebt: 0,
-        deltaClarity: 0,
-        deltaLight: 0,
-        deltaConcealment: 0,
+        pc: prev.pc + 1,
+        op,
+        mod: 0,
+        regs: [m0, m1, m2, r3],
+        c: prev.c,
+        h: prev.h,
+        z: prev.z,
       };
-  }
-}
-
-export function applyJudgment(
-  soul: Soul,
-  world: WorldState,
-  res: JudgmentResult
-): { soul: Soul; world: WorldState } {
-  const updatedSoul: Soul = {
-    ...soul,
-    merit: soul.merit + res.deltaMerit,
-    debt: soul.debt + res.deltaDebt,
-    clarity: clamp01(soul.clarity + res.deltaClarity),
-  };
-
-  const updatedWorld: WorldState = {
-    ...world,
-    light: world.light + res.deltaLight,
-    concealment: Math.max(0, world.concealment + res.deltaConcealment),
-  };
-
-  return { soul: updatedSoul, world: updatedWorld };
-}
-
-export function advanceHistory(world: WorldState): WorldState {
-  const tick = world.tick + 1;
-  let stage = world.stage;
-
-  if (world.light > 100 && world.stage === "OlamHaZeh") {
-    stage = "YemotHaMashiach";
-  }
-  if (world.light > 1000 && world.stage === "YemotHaMashiach") {
-    stage = "OlamHaBa";
-  }
-
-  return { ...world, tick, stage };
-}
-
-// -------------------------
-// Ramchal VM
-// -------------------------
-
-export type RamchalVMOptions = VMOptions & {
-  initialWorld?: Partial<WorldState>;
-  initialSouls?: Soul[];
-};
-
-export interface RamchalVMResult {
-  out: number[];
-  world: WorldState;
-  souls: Record<string, Soul>;
-}
-
-export function runRamchal(
-  program: Instr[],
-  opts: RamchalVMOptions = {}
-): RamchalVMResult {
-  const stack: number[] = [];
-  const out: number[] = [];
-  let ip = 0;
-  let steps = 0;
-  const maxSteps = opts.maxSteps ?? 100_000;
-
-  const pop = () => {
-    if (stack.length === 0) throw new Error("Stack underflow");
-    return stack.pop() as number;
-  };
-
-  let world: WorldState = {
-    light: 0,
-    concealment: 0,
-    stage: "OlamHaZeh",
-    tick: 0,
-    ...opts.initialWorld,
-  };
-
-  const souls: Record<string, Soul> = {};
-  for (const s of opts.initialSouls ?? []) {
-    souls[s.id] = { ...s };
-  }
-
-  const trace = opts.trace ?? false;
-
-  while (ip >= 0 && ip < program.length) {
-    if (steps++ > maxSteps) {
-      throw new Error("Max steps exceeded (possible infinite loop)");
     }
 
-    const ins = program[ip];
+    case Opcode.Sovev: {
+      // סבב: full 5-word cryptographic round on [R0..R3,C].
+      const [r0, r1, r2, r3] = prev.regs;
+      const state: State5 = [r0, r1, r2, r3, prev.c];
+      const [nr0, nr1, nr2, nr3, nc] = round5(state, roundIndex);
 
-    if (trace) {
-      console.log(
-        `RAMCHAL ip=${ip} op=${ins.op} stack=[${stack.join(
-          ","
-        )}] tick=${world.tick} stage=${world.stage}`
-      );
+      return {
+        pc: prev.pc + 1,
+        op,
+        mod: 0,
+        regs: [nr0, nr1, nr2, nr3],
+        c: nc,
+        h: prev.h,
+        z: prev.z,
+      };
     }
 
-    switch (ins.op as OpCode) {
-      // numeric ops
-      case "PUSH":
-        stack.push(ins.value ?? 0);
-        ip++;
-        break;
+    case Opcode.Aleph:
+    default: {
+      // Aleph: visible no-op; updates hidden (c,h,z) via miniRound3.
+      const [c, h, z]: MiniState3 = [prev.c, prev.h, prev.z];
+      const inputWord = mod(prev.pc + programCommit);
+      const [nc, nh, nz] = miniRound3([c, h, z], inputWord);
 
-      case "ADD": {
-        const b = pop(), a = pop();
-        stack.push(a + b);
-        ip++;
-        break;
-      }
-
-      case "SUB": {
-        const b = pop(), a = pop();
-        stack.push(a - b);
-        ip++;
-        break;
-      }
-
-      case "MUL": {
-        const b = pop(), a = pop();
-        stack.push(a * b);
-        ip++;
-        break;
-      }
-
-      case "DIV": {
-        const b = pop(), a = pop();
-        if (b === 0) throw new Error("Division by zero");
-        stack.push(a / b);
-        ip++;
-        break;
-      }
-
-      case "OUT": {
-        const v = pop();
-        out.push(v);
-        ip++;
-        break;
-      }
-
-      case "JMP":
-        ip = ins.target ?? ip + 1;
-        break;
-
-      case "JZ": {
-        const v = pop();
-        if (v === 0) ip = ins.target ?? ip + 1;
-        else ip++;
-        break;
-      }
-
-      // Ramchal ops
-      // stack: [soulId, clarity]
-      case "MITZVAH": {
-        const clarity = pop();
-        const soulIdNum = pop();
-        const soulId = String(soulIdNum);
-
-        const soul = souls[soulId];
-        if (!soul) throw new Error(`Unknown soul in MITZVAH: ${soulId}`);
-
-        const ev: ChoiceEvent = {
-          soulId,
-          action: "mitzvah",
-          clarityAtChoice: clarity,
-        };
-
-        const judgment = judgeChoice(ev);
-        const updated = applyJudgment(soul, world, judgment);
-        souls[soulId] = updated.soul;
-        world = updated.world;
-
-        ip++;
-        break;
-      }
-
-      case "AVEIRAH": {
-        const clarity = pop();
-        const soulIdNum = pop();
-        const soulId = String(soulIdNum);
-
-        const soul = souls[soulId];
-        if (!soul) throw new Error(`Unknown soul in AVEIRAH: ${soulId}`);
-
-        const ev: ChoiceEvent = {
-          soulId,
-          action: "aveirah",
-          clarityAtChoice: clarity,
-        };
-
-        const judgment = judgeChoice(ev);
-        const updated = applyJudgment(soul, world, judgment);
-        souls[soulId] = updated.soul;
-        world = updated.world;
-
-        ip++;
-        break;
-      }
-
-      case "TICK":
-        world = advanceHistory(world);
-        ip++;
-        break;
-
-      case "HALT":
-        return { out, world, souls };
-
-      default:
-        throw new Error(`Unknown opcode: ${ins.op}`);
+      return {
+        pc: prev.pc + 1,
+        op: Opcode.Aleph,
+        mod: 0,
+        regs: prev.regs,
+        c: nc,
+        h: nh,
+        z: nz,
+      };
     }
   }
+}
 
-  return { out, world, souls };
+// Run a whole program and collect the trace.
+export function runProgram(program: Program, params: VmParams): TraceRow[] {
+  const trace: TraceRow[] = [];
+  let row = initialRow();
+
+  for (let i = 0; i < program.length; i++) {
+    const op = program[i];
+    const next = step(row, op, params, i);
+    trace.push(next);
+    row = next;
+  }
+
+  return trace;
+}
+
+// ---- AIR-style checker ----
+// In real AIR you'd have explicit polynomial constraints;
+// here we re-run step() and check equality, which is equivalent for our VM.
+
+export function checkAirTransition(
+  prev: TraceRow,
+  next: TraceRow,
+  params: VmParams,
+  roundIndex: number
+): boolean {
+  const expected = step(prev, next.op, params, roundIndex);
+
+  return (
+    expected.pc === next.pc &&
+    expected.op === next.op &&
+    expected.mod === next.mod &&
+    expected.c === next.c &&
+    expected.h === next.h &&
+    expected.z === next.z &&
+    expected.regs[0] === next.regs[0] &&
+    expected.regs[1] === next.regs[1] &&
+    expected.regs[2] === next.regs[2] &&
+    expected.regs[3] === next.regs[3]
+  );
 }
