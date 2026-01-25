@@ -1,172 +1,142 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <title>IvritCode — Hebrew Letters as Opcodes</title>
+    <meta charset="UTF-8" />
+    <title>IvritCode · A Sacred Machine Language</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta
-      name="description"
-      content="IvritCode is a small virtual machine where Hebrew letters act as opcodes, with a Ramchal-based engine for bechira and hashgacha."
-    />
-    <link rel="stylesheet" href="/styles.css" />
+
+    <!-- Main stylesheet -->
+    <link rel="stylesheet" href="./styles.css" />
+
+    <style>
+      /* Light structural styles in case styles.css is empty */
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        background: radial-gradient(circle at top, #1a2238 0, #050509 55%);
+        color: #f5f5f5;
+      }
+
+      .page {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 1.5rem;
+      }
+
+      header {
+        margin-bottom: 1.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+        padding-bottom: 1rem;
+      }
+
+      h1 {
+        margin: 0 0 0.25rem;
+        font-size: 1.9rem;
+      }
+
+      .subtitle {
+        margin: 0;
+        font-size: 0.95rem;
+        opacity: 0.8;
+      }
+
+      main {
+        display: grid;
+        gap: 1.5rem;
+      }
+
+      .card {
+        background: rgba(10, 10, 20, 0.9);
+        border-radius: 0.75rem;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        padding: 1rem 1.25rem;
+        box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45);
+      }
+
+      .card h2 {
+        margin-top: 0;
+        font-size: 1.1rem;
+      }
+
+      #app pre {
+        margin: 0;
+        font-family: "JetBrains Mono", "Fira Code", Menlo, Monaco, Consolas,
+          "Courier New", monospace;
+        font-size: 0.85rem;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .footer {
+        margin-top: 1.5rem;
+        font-size: 0.75rem;
+        opacity: 0.7;
+        text-align: center;
+      }
+
+      a {
+        color: #9ad0ff;
+      }
+    </style>
   </head>
+
   <body>
     <div class="page">
       <header>
-        <div class="brand"><span>IVRIT</span>CODE.ORG</div>
-        <nav>
-          <a href="#what">What is IvritCode?</a>
-          <a href="#playground">Playground</a>
-          <a href="#ramchal">Ramchal Engine</a>
-          <a
-            href="https://github.com/richardatf-oss/IvritCode"
-            target="_blank"
-            rel="noopener"
-            >GitHub</a
-          >
-        </nav>
+        <h1>IvritCode</h1>
+        <p class="subtitle">
+          Hebrew letters as opcodes. Niqqud &amp; trope as modifiers. A sacred
+          machine language.
+        </p>
       </header>
 
-      <section class="hero">
-        <div>
-          <div class="chip">
-            <span>Beta</span> Hebrew letters as opcodes
+      <main>
+        <section class="card">
+          <h2>VM Trace</h2>
+          <p style="margin-top: 0; margin-bottom: 0.75rem;">
+            Below is the execution trace of a small IvritCode demo program
+            (א → ב → ג → ד → סבב). Each line is one step in the virtual
+            machine, showing the program counter, current letter, registers, and
+            hidden state.
+          </p>
+          <div id="app">
+            <!-- main.js will render the trace into this container -->
           </div>
-          <h1><span>IvritCode</span> as a sacred machine language.</h1>
-          <p class="lead">
-            IvritCode treats the 22 letters (plus the hidden Alef Olam) as a complete instruction
-            set. Niqqud and trope become modifiers. On top of the stack machine we run a Ramchal
-            kernel: bechira, hashgacha, reward and tikkun as actual state transitions.
-          </p>
-          <div class="hero-buttons">
-            <button id="btn-scroll-playground" class="btn btn-primary">
-              ▶ Run the Ramchal engine
-            </button>
-            <a
-              class="btn btn-outline"
-              href="https://quantumetzchaim.com"
-              target="_blank"
-              rel="noopener"
-            >
-              Quantum Etz Chaim
-            </a>
-          </div>
-        </div>
+        </section>
 
-        <div class="hero-panel">
-          <div class="hero-panel-header">
-            <span>Ramchal trace</span>
-            <span>Derech HaShem v0</span>
-          </div>
-          <div id="hero-trace" class="hero-panel-body">
-ip=0 op=PUSH stack=[]
-ip=1 op=PUSH stack=[1]
-ip=2 op=MITZVAH stack=[1,0.6]
-ip=3 op=TICK stack=[]
-          </div>
-        </div>
-      </section>
-
-      <section id="what" class="section-grid">
-        <div>
-          <h2>What is IvritCode?</h2>
-          <p>
-            IvritCode is a minimal virtual machine and language where Hebrew letters stand in
-            for opcodes. At the lowest level, it is a compact numeric stack machine that can add,
-            subtract, branch and print. On top of that, we mount a “Ramchal VM” that encodes the
-            core principles of Derech HaShem as executable rules: free will, divine governance,
-            reward and repair, and the slow unfolding of history.
-          </p>
-          <p>
-            The goal is not to replace Torah or to reduce Kabbalah to code. The goal is to
-            create a bridge language between sacred concepts and modern models of computation
-            and mind.
-          </p>
-        </div>
-        <div class="card">
-          <h3>Layers</h3>
-          <p><strong>1. Stack VM:</strong> numbers in, numbers out. PUSH, ADD, SUB, MUL, DIV, OUT.</p>
-          <p>
-            <strong>2. Ramchal kernel:</strong> souls, world state, bechira window, judgment,
-            concealment and historical stage.
-          </p>
-          <p>
-            <strong>3. Ivrit semantics:</strong> future versions map letters and crowns to
-            operations in the Tree of Life.
-          </p>
-        </div>
-      </section>
-
-      <section id="playground">
-        <h2>Play with the VM</h2>
-        <p>
-          Choose a mode, edit the tiny program, and press <strong>Run</strong>. In numeric mode you
-          get raw stack output. In Ramchal mode you get a world tick, soul merit/debt, and shifts in
-          light and concealment.
-        </p>
-
-        <div class="playground-layout">
-          <div>
-            <textarea id="program-input"></textarea>
-            <div class="playground-controls">
-              <div class="mode-toggle" id="mode-toggle">
-                <button data-mode="numeric" class="active">Numeric VM</button>
-                <button data-mode="ramchal">Ramchal VM</button>
-              </div>
-              <button id="btn-run" class="btn btn-primary">Run program</button>
-              <span id="status" class="status-text"></span>
-            </div>
-          </div>
-          <div class="output-panel" id="output-panel">
-            <strong>Output</strong> will appear here.
-          </div>
-        </div>
-      </section>
-
-      <section id="ramchal" class="section-grid">
-        <div>
-          <h2>The Ramchal engine</h2>
-          <p>
-            In the Ramchal VM, a program may emit <code>MITZVAH</code>, <code>AVEIRAH</code> and
-            <code>TICK</code> instructions. A choice event is only judged if it occurs inside a
-            “bechira window”, where clarity is neither zero nor total. Reward and punishment are
-            not points but shifts in clarity, closeness and concealment.
-          </p>
-          <p>
-            Each <code>TICK</code> advances history one step. As light accumulates, the world walks
-            through stages named after classical language: <em>Olam HaZeh</em>, <em>Yemot
-            HaMashiach</em>, and <em>Olam HaBa</em>.
-          </p>
-        </div>
-        <div class="card">
-          <h3>Current model</h3>
-          <p>
-            This demo is a v0 model. It is intentionally small, transparent and hackable. The
-            numbers and thresholds are placeholders; the architecture is what matters. Future
-            versions will map the 22 letters and their crowns to precise operations in the Tree
-            of Life.
-          </p>
-        </div>
-      </section>
-
-      <footer>
-        <div>© <span id="year"></span> IvritCode.org · A small VM for a very big conversation.</div>
-        <div>
-          <a
-            href="https://github.com/richardatf-oss/IvritCode"
-            target="_blank"
-            rel="noopener"
-            >GitHub</a
+        <section class="card">
+          <h2>How to Run Locally</h2>
+          <pre>
+npm install
+npm run build
+npm start</pre
           >
-          ·
-          <a href="https://quantumetzchaim.com" target="_blank" rel="noopener"
-            >Quantum Etz Chaim</a
-          >
-        </div>
-      </footer>
+          <p style="margin-top: 0.75rem;">
+            The demo lives in <code>src/index.ts</code> and uses
+            <code>src/vm.ts</code>, <code>src/round.ts</code>, and
+            <code>src/field.ts</code> to define the IvritCode VM, round
+            function, and finite-field arithmetic.
+          </p>
+        </section>
+      </main>
+
+      <div class="footer">
+        IvritCode · A Sacred Machine Language · ©
+        <span id="year"></span>
+      </div>
     </div>
 
-    <!-- Plain JS entry (no TS, no bundler) -->
-    <script src="/main.js" type="module"></script>
+    <script>
+      // Set footer year without needing extra TS wiring
+      (function () {
+        var el = document.getElementById("year");
+        if (el) el.textContent = String(new Date().getFullYear());
+      })();
+    </script>
+
+    <!-- Bundled JS output (from TypeScript build) -->
+    <script src="./main.js"></script>
   </body>
 </html>
