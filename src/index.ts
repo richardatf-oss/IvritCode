@@ -22,6 +22,7 @@ function readInt(id: string, fallback: number): number {
 }
 
 function runDemo(): void {
+  // Demo program: א → ב → ג → ד → סבב
   const program: Program = [
     Opcode.Aleph,
     Opcode.Bet,
@@ -52,8 +53,8 @@ function runDemo(): void {
   container.appendChild(pre);
 }
 
-// 🔑 Make it globally callable (THIS IS THE KEY FIX)
+// 🔑 Make it globally callable so HTML can say window.runIvritCode()
 ;(window as any).runIvritCode = runDemo;
 
-// Optional: run once on load so users see something immediately
+// Optional: populate the trace once when the page loads
 window.addEventListener("DOMContentLoaded", runDemo);
