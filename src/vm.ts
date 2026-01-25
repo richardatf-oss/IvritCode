@@ -5,7 +5,7 @@ import { add, mul, mod } from "./field";
 import { miniRound3, round5, MiniState3, State5 } from "./round";
 
 // Opcodes for selected letters.
-// You can add more later; just keep the numbers stable once "locked".
+// Once these are "locked", don't change the numeric values lightly.
 export enum Opcode {
   Aleph = 1,   // א
   Bet   = 2,   // ב
@@ -19,7 +19,7 @@ export interface TraceRow {
   pc: number;         // program counter
   op: Opcode;         // current op (letter)
   mod: number;        // modifier bits (niqqud/trope etc., unused for now)
-  regs: [number, number, number, number]; // R0..R3
+  regs: [number, number, number, number]; // R0..R3 (visible registers)
   c: number;          // hidden capacity register
   h: number;          // hidden history register
   z: number;          // extra hidden word for miniRound3
@@ -29,26 +29,35 @@ export interface TraceRow {
 export type Program = Opcode[];
 
 // "Program commitment" for Aleph binding.
-// For now we just pass a number; in future this is a hash of the bytecode.
+// For now this is just a number; later it can be a hash of the bytecode.
 export interface VmParams {
   programCommit: number;
 }
 
-// ---- VM execution ----
+// ---- VM initial state ----
 
-export function initialRow(): TraceRow {
+export function initialRow(
+  initialRegs: [number, number, number, number] = [0, 0, 0, 0]
+): TraceRow {
   return {
     pc: 0,
     op: Opcode.Aleph,
     mod: 0,
-    regs: [0, 0, 0, 0],
+    regs: initialRegs,
     c: 0,
     h: 0,
     z: 0,
   };
 }
 
-export function step(prev: TraceRow, op: Opcode, params: VmParams, roundIndex: number): TraceRow {
+// ---- Single-step semantics ----
+
+export function step(
+  prev: TraceRow,
+  op: Opcode,
+  params: VmParams,
+  roundIndex: number
+): TraceRow {
   const { programCommit } = params;
 
   switch (op) {
@@ -84,6 +93,7 @@ export function step(prev: TraceRow, op: Opcode, params: VmParams, roundIndex: n
 
     case Opcode.Dalet: {
       // Dalet: linear mix of R0..R2 into R0..R2; R3 unchanged.
+      // This is a tiny diffusion step, like a mini MDS.
       const [r0, r1, r2, r3] = prev.regs;
       const m0 = mod(r0 + r1 + r2);
       const m1 = mod(r0 + 2 * r1 + 3 * r2);
@@ -100,7 +110,7 @@ export function step(prev: TraceRow, op: Opcode, params: VmParams, roundIndex: n
     }
 
     case Opcode.Sovev: {
-      // סבב: full 5-word cryptographic round on [R0..R3,C].
+      // סבב: full 5-word cryptographic round on [R0..R3, C].
       const [r0, r1, r2, r3] = prev.regs;
       const state: State5 = [r0, r1, r2, r3, prev.c];
       const [nr0, nr1, nr2, nr3, nc] = round5(state, roundIndex);
@@ -119,6 +129,7 @@ export function step(prev: TraceRow, op: Opcode, params: VmParams, roundIndex: n
     case Opcode.Aleph:
     default: {
       // Aleph: visible no-op; updates hidden (c,h,z) via miniRound3.
+      // Binds the run to (programCommit, pc) cryptographically.
       const [c, h, z]: MiniState3 = [prev.c, prev.h, prev.z];
       const inputWord = mod(prev.pc + programCommit);
       const [nc, nh, nz] = miniRound3([c, h, z], inputWord);
@@ -136,10 +147,15 @@ export function step(prev: TraceRow, op: Opcode, params: VmParams, roundIndex: n
   }
 }
 
-// Run a whole program and collect the trace.
-export function runProgram(program: Program, params: VmParams): TraceRow[] {
+// ---- Run whole program ----
+
+export function runProgram(
+  program: Program,
+  params: VmParams,
+  initialRegs: [number, number, number, number] = [0, 0, 0, 0]
+): TraceRow[] {
   const trace: TraceRow[] = [];
-  let row = initialRow();
+  let row = initialRow(initialRegs);
 
   for (let i = 0; i < program.length; i++) {
     const op = program[i];
@@ -152,8 +168,8 @@ export function runProgram(program: Program, params: VmParams): TraceRow[] {
 }
 
 // ---- AIR-style checker ----
-// In real AIR you'd have explicit polynomial constraints;
-// here we re-run step() and check equality, which is equivalent for our VM.
+// In a real AIR, you'd express constraints as polynomials;
+// here we simply recompute step() and compare with the given "next" row.
 
 export function checkAirTransition(
   prev: TraceRow,
