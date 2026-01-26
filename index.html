@@ -9,12 +9,242 @@
       content="IvritCode – Hebrew letters as opcodes, niqqud as modifiers. A tiny virtual machine exploring a sacred machine language."
     />
     <link rel="stylesheet" href="./styles.css" />
+    <style>
+      /* Minimal fallback styling in case styles.css doesn’t cover everything */
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        color: #f6f7ff;
+        background: radial-gradient(circle at top left, #1e2b60, #110020 60%);
+      }
+      .page-shell {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 24px 16px 40px;
+      }
+      a {
+        color: #9ad0ff;
+        text-decoration: none;
+      }
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        font-size: 14px;
+      }
+      .logo-word {
+        font-weight: 700;
+        letter-spacing: 0.14em;
+      }
+      .logo-accent {
+        color: #ff6ad5;
+      }
+      .topbar-tag {
+        margin-left: 8px;
+        opacity: 0.8;
+      }
+      .topbar-link {
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        font-size: 12px;
+      }
+      .layout-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+        gap: 20px;
+        margin-bottom: 24px;
+      }
+      .layout-row-bottom {
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.1fr);
+      }
+      @media (max-width: 900px) {
+        .layout-row,
+        .layout-row-bottom {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+      .panel {
+        background: radial-gradient(circle at top left, #222b5b, #13012b 60%);
+        border-radius: 18px;
+        padding: 18px 20px 20px;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .panel-title {
+        margin: 0 0 12px;
+        font-size: 22px;
+      }
+      .panel-body {
+        margin: 0 0 10px;
+        font-size: 14px;
+        line-height: 1.5;
+        opacity: 0.94;
+      }
+      .panel-list {
+        margin: 8px 0 10px;
+        padding-left: 22px;
+        font-size: 14px;
+      }
+      .panel-list li {
+        margin-bottom: 4px;
+      }
+      .chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 6px;
+      }
+      .chip {
+        font-size: 11px;
+        padding: 4px 8px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.24);
+      }
+      .chip-primary {
+        background: linear-gradient(90deg, #ff54b0, #ff9a5f);
+        border: none;
+        color: #18001d;
+        font-weight: 600;
+      }
+      .chip-muted {
+        opacity: 0.8;
+      }
+      .demo-program {
+        margin: 12px 0 10px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: rgba(5, 10, 40, 0.9);
+        font-size: 13px;
+      }
+      .demo-label {
+        opacity: 0.8;
+        margin-bottom: 6px;
+      }
+      .demo-sequence {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        font-size: 18px;
+        align-items: center;
+      }
+      .panel-steps {
+        margin: 8px 0 12px;
+        padding-left: 18px;
+        font-size: 13px;
+      }
+      .register-form {
+        display: grid;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .register-row {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        font-size: 13px;
+      }
+      .register-label {
+        opacity: 0.9;
+      }
+      .register-input {
+        padding: 6px 8px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        background: rgba(5, 10, 40, 0.9);
+        color: #f6f7ff;
+      }
+      .primary-button {
+        margin-top: 4px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: none;
+        font-weight: 600;
+        font-size: 13px;
+        background: linear-gradient(90deg, #ff54b0, #ff9a5f);
+        color: #140019;
+        cursor: pointer;
+      }
+      .primary-button:hover {
+        filter: brightness(1.08);
+      }
+      .trace-details {
+        margin-top: 8px;
+        font-size: 13px;
+      }
+      .trace-summary {
+        cursor: pointer;
+        list-style: none;
+      }
+      .trace-output {
+        margin-top: 8px;
+        padding: 8px 10px;
+        border-radius: 10px;
+        background: rgba(3, 6, 26, 0.95);
+        font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo,
+          Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        font-size: 12px;
+        line-height: 1.45;
+        max-height: 260px;
+        overflow: auto;
+      }
+      .mini-panel {
+        margin-top: 14px;
+        padding-top: 10px;
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+        font-size: 13px;
+      }
+      .mini-title {
+        margin: 0 0 6px;
+        font-size: 14px;
+      }
+      .mini-body {
+        margin: 0 0 6px;
+        opacity: 0.9;
+      }
+      .mini-list {
+        margin: 0 0 8px;
+        padding-left: 18px;
+      }
+      .letter-grid {
+        margin-top: 8px;
+        font-size: 13px;
+        max-height: 260px;
+        overflow: auto;
+        padding-right: 4px;
+      }
+      .letter-row {
+        display: grid;
+        grid-template-columns: 34px minmax(0, 1fr);
+        gap: 6px;
+        padding: 4px 0;
+        border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
+      }
+      .letter-symbol {
+        font-weight: 700;
+        text-align: center;
+        font-size: 16px;
+      }
+      .letter-text {
+        opacity: 0.9;
+      }
+      .site-footer {
+        margin-top: 18px;
+        font-size: 11px;
+        opacity: 0.8;
+        text-align: center;
+      }
+    </style>
   </head>
   <body>
     <div class="page-shell">
       <header class="topbar">
         <div class="topbar-left">
-          <span class="logo-word">IVRIT<span class="logo-accent">CODE</span></span>
+          <span class="logo-word"
+            >IVRIT<span class="logo-accent">CODE</span></span
+          >
           <span class="topbar-tag">ALPHA · CONCEPT DEMO</span>
         </div>
         <div class="topbar-right">
@@ -29,18 +259,18 @@
         </div>
       </header>
 
-      <main class="layout-main">
+      <main>
         <!-- Top row: explanation + interactive demo -->
         <section class="layout-row">
-          <!-- Left panel: explanation -->
-          <article class="panel panel-left">
+          <!-- Left: explanation -->
+          <article class="panel">
             <h1 class="panel-title">What’s happening on this page?</h1>
 
             <p class="panel-body">
-              You’re looking at a tiny virtual machine built out of Hebrew letters.
-              Under the hood there are <strong>23 registers</strong>:
-              <strong>א–ת</strong> plus <strong>A</strong>, the hidden
-              <em>Aleph-Olam</em> register.
+              You’re looking at a tiny virtual machine built out of Hebrew
+              letters. Under the hood there are
+              <strong>23 registers</strong>: <strong>א–ת</strong> plus
+              <strong>A</strong>, the hidden <em>Aleph-Olam</em> register.
             </p>
 
             <p class="panel-body">
@@ -50,8 +280,10 @@
             </p>
 
             <div class="demo-program">
-              <div class="demo-label">Demo program — the letters that run on your numbers:</div>
-              <div class="demo-sequence" id="demo-program-letters">
+              <div class="demo-label">
+                Demo program — the letters that run on your numbers:
+              </div>
+              <div class="demo-sequence">
                 <span>א</span>
                 <span>→</span>
                 <span>ב</span>
@@ -65,16 +297,29 @@
             </div>
 
             <ul class="panel-list">
-              <li><strong>א</strong> quietly prepares the machine &amp; “locks in” this run (identity step).</li>
-              <li><strong>ב</strong> adds your first two numbers (א + ב → ג).</li>
-              <li><strong>ג</strong> multiplies them (א × ב → ד).</li>
-              <li><strong>ת</strong> rotates the quartet (א, ב, ג, ד).</li>
-              <li><strong>סבב</strong> performs a deeper cryptographic-style mix on the quartet.</li>
+              <li><strong>א</strong> quietly locks in this run (identity step).</li>
+              <li>
+                <strong>ב</strong> adds your first two numbers
+                (<strong>ג = א + ב</strong>).
+              </li>
+              <li>
+                <strong>ג</strong> multiplies them
+                (<strong>ד = א × ב</strong>).
+              </li>
+              <li>
+                <strong>ת</strong> rotates the quartet
+                (<strong>(א, ב, ג, ד) → (ג, ד, א, ב)</strong>).
+              </li>
+              <li>
+                <strong>סבב</strong> performs a deeper cryptographic-style mix
+                on the quartet.
+              </li>
             </ul>
 
             <p class="panel-body">
-              All of this happens entirely in your browser. No network calls, no
-              signup, no wallet — just letters and numbers dancing for a moment.
+              Everything happens entirely in your browser. No network calls, no
+              signup, no wallet — just letters and numbers dancing for a
+              moment.
             </p>
 
             <div class="chip-row">
@@ -84,93 +329,76 @@
             </div>
           </article>
 
-          <!-- Right panel: interactive runner -->
-          <article class="panel panel-right">
+          <!-- Right: interactive runner -->
+          <article class="panel">
             <h2 class="panel-title">Try it: let the letters run</h2>
 
             <p class="panel-body">
-              Choose four starting numbers. Click the button. Then open the trace
-              panel below to see what each instruction did, step by step.
+              Choose four starting numbers. Click the button. Then open the
+              trace panel to see exactly what each instruction did.
             </p>
 
             <ol class="panel-steps">
               <li>Type any whole numbers into the boxes below.</li>
               <li>Click <strong>Run IvritCode Program</strong>.</li>
               <li>
-                Open <strong>Show raw execution trace</strong> and scroll through
-                the steps.
+                Open <strong>Show raw execution trace</strong> and scroll
+                through the steps.
               </li>
             </ol>
 
-            <form class="register-form" id="register-form">
+            <form class="register-form" onsubmit="return false;">
               <div class="register-row">
-                <label class="register-label" for="input-r0">
+                <label class="register-label" for="r0">
                   R0 (first number) → א
                 </label>
                 <input
-                  id="input-r0"
-                  name="r0"
+                  id="r0"
                   type="number"
-                  inputmode="numeric"
                   class="register-input"
                   value="1"
                 />
               </div>
-
               <div class="register-row">
-                <label class="register-label" for="input-r1">
+                <label class="register-label" for="r1">
                   R1 (second number) → ב
                 </label>
                 <input
-                  id="input-r1"
-                  name="r1"
+                  id="r1"
                   type="number"
-                  inputmode="numeric"
                   class="register-input"
                   value="2"
                 />
               </div>
-
               <div class="register-row">
-                <label class="register-label" for="input-r2">
-                  R2 → ג
-                </label>
+                <label class="register-label" for="r2">R2 → ג</label>
                 <input
-                  id="input-r2"
-                  name="r2"
+                  id="r2"
                   type="number"
-                  inputmode="numeric"
                   class="register-input"
                   value="3"
                 />
               </div>
-
               <div class="register-row">
-                <label class="register-label" for="input-r3">
-                  R3 → ד
-                </label>
+                <label class="register-label" for="r3">R3 → ד</label>
                 <input
-                  id="input-r3"
-                  name="r3"
+                  id="r3"
                   type="number"
-                  inputmode="numeric"
                   class="register-input"
                   value="4"
                 />
               </div>
 
-              <button
-                type="button"
-                id="run-program-btn"
-                class="primary-button"
-              >
+              <button id="run-btn" type="button" class="primary-button">
                 Run IvritCode Program
               </button>
             </form>
 
-            <details class="trace-details" id="trace-section">
-              <summary class="trace-summary">Show raw execution trace</summary>
-              <pre class="trace-output" id="trace-output">
+            <details class="trace-details" open>
+              <summary class="trace-summary">
+                Show raw execution trace
+              </summary>
+              <pre id="trace-output" class="trace-output">
 Press “Run IvritCode Program” to see the steps here.
               </pre>
             </details>
@@ -178,20 +406,15 @@ Press “Run IvritCode Program” to see the steps here.
             <section class="mini-panel">
               <h3 class="mini-title">Letters &amp; niqqud in this demo</h3>
               <p class="mini-body">
-                The VM already knows all <strong>22 letters</strong> as
-                operators, plus <strong>A</strong> as the Aleph-Olam register.
-                In future demos, you’ll also be able to attach
-                <strong>niqqud</strong>:
+                The VM underneath already knows all
+                <strong>22 letters</strong> as operators, plus
+                <strong>A</strong> as the Aleph-Olam register.
               </p>
-              <ul class="mini-list">
-                <li><strong>ְ (sheva)</strong> — pure/query mode; effects are summarized into A.</li>
-                <li><strong>ִ (hiriq)</strong> — immediate mode; adds literal constants into the mix.</li>
-              </ul>
               <p class="mini-body">
-                This page currently runs a fixed sequence
-                <code>א → ב → ג → ת → סבב</code> without niqqud, but the full
-                instruction set is implemented in <code>src/vm.ts</code> and
-                documented in <code>SPEC.md</code>.
+                In future versions, you’ll also see <strong>niqqud</strong>:
+                sheva (ְ) as a “pure/query” mode that writes into A, and hiriq
+                (ִ) as an “immediate” mode that adds literal constants into the
+                mix.
               </p>
             </section>
           </article>
@@ -199,7 +422,7 @@ Press “Run IvritCode Program” to see the steps here.
 
         <!-- Bottom row: curiosity + full letter reference -->
         <section class="layout-row layout-row-bottom">
-          <article class="panel panel-bottom">
+          <article class="panel">
             <h2 class="panel-title">If you’re just curious</h2>
             <p class="panel-body">
               At a simple level, IvritCode is a way of asking:
@@ -210,24 +433,21 @@ Press “Run IvritCode Program” to see the steps here.
               <li>What happens when letters push numbers around?</li>
             </ul>
             <p class="panel-body">
-              This page doesn’t try to prove anything. It just lets you play on
-              the border between <em>symbol</em>, <em>story</em>, and
+              This page doesn’t prove anything. It just lets you play on the
+              border between <em>symbol</em>, <em>story</em>, and
               <em>machine</em>.
             </p>
           </article>
 
-          <article class="panel panel-bottom">
-            <h2 class="panel-title">Letter reference (א–ת)</h2>
+          <article class="panel">
+            <h2 class="panel-title">Letter reference (א–ת + A)</h2>
             <p class="panel-body">
-              These are the base (unmodified) semantics of each letter in the
-              current VM. All act on the 23-register state
-              (א–ת + A/Aleph-Olam).
+              Base (unmodified) semantics of each letter in the current VM.
             </p>
-
             <div class="letter-grid">
               <div class="letter-row">
                 <span class="letter-symbol">א</span>
-                <span class="letter-text">Identity / no-op. State is unchanged.</span>
+                <span class="letter-text">Identity / no-op (state unchanged).</span>
               </div>
               <div class="letter-row">
                 <span class="letter-symbol">ב</span>
@@ -239,7 +459,9 @@ Press “Run IvritCode Program” to see the steps here.
               </div>
               <div class="letter-row">
                 <span class="letter-symbol">ד</span>
-                <span class="letter-text">Differences: ג = ב − א, ד = א − ב.</span>
+                <span class="letter-text">
+                  Differences: ג = ב − א, ד = א − ב.
+                </span>
               </div>
               <div class="letter-row">
                 <span class="letter-symbol">ה</span>
@@ -263,7 +485,7 @@ Press “Run IvritCode Program” to see the steps here.
               </div>
               <div class="letter-row">
                 <span class="letter-symbol">י</span>
-                <span class="letter-text">Load from Aleph-Olam: א = A.</span>
+                <span class="letter-text">Load from A: א = A.</span>
               </div>
               <div class="letter-row">
                 <span class="letter-symbol">כ</span>
@@ -271,11 +493,15 @@ Press “Run IvritCode Program” to see the steps here.
               </div>
               <div class="letter-row">
                 <span class="letter-symbol">ל</span>
-                <span class="letter-text">Global sum: A = Σ(א–ת).</span>
+                <span class="letter-text">
+                  Global sum: A = Σ(א–ת), the sum of all 22 Hebrew registers.
+                </span>
               </div>
               <div class="letter-row">
                 <span class="letter-symbol">מ</span>
-                <span class="letter-text">Mean: ג = ⌊(א + ב + ג + ד) / 4⌋.</span>
+                <span class="letter-text">
+                  Mean: ג = ⌊(א + ב + ג + ד) / 4⌋.
+                </span>
               </div>
               <div class="letter-row">
                 <span class="letter-symbol">נ</span>
@@ -283,11 +509,15 @@ Press “Run IvritCode Program” to see the steps here.
               </div>
               <div class="letter-row">
                 <span class="letter-symbol">ס</span>
-                <span class="letter-text">Rotate א–ת cyclically (א gets old ת, etc.).</span>
+                <span class="letter-text">
+                  Rotate א–ת cyclically (א gets old ת, etc.).
+                </span>
               </div>
               <div class="letter-row">
                 <span class="letter-symbol">ע</span>
-                <span class="letter-text">Dot product of halves (א–כ with ל–ת) → A.</span>
+                <span class="letter-text">
+                  Dot product of halves (א–כ with ל–ת) → A.
+                </span>
               </div>
               <div class="letter-row">
                 <span class="letter-symbol">פ</span>
@@ -295,50 +525,370 @@ Press “Run IvritCode Program” to see the steps here.
               </div>
               <div class="letter-row">
                 <span class="letter-symbol">צ</span>
-                <span class="letter-text">Compare א and ב: A = sign(א − ב).</span>
+                <span class="letter-text">Compare: A = sign(א − ב).</span>
               </div>
               <div class="letter-row">
                 <span class="letter-symbol">ק</span>
-                <span class="letter-text">Mirror: reverse the values of א–ת.</span>
+                <span class="letter-text">
+                  Mirror: reverse the values of א–ת.
+                </span>
               </div>
               <div class="letter-row">
                 <span class="letter-symbol">ר</span>
-                <span class="letter-text">Reseed: (א,ב,ג,ד) = (A, A+1, A+2, A+3).</span>
+                <span class="letter-text">
+                  Reseed: (א, ב, ג, ד) = (A, A+1, A+2, A+3).
+                </span>
               </div>
               <div class="letter-row">
                 <span class="letter-symbol">ש</span>
-                <span class="letter-text">Non-linear mix over (א,ב,ג,ד) with squares.</span>
+                <span class="letter-text">
+                  Non-linear mix over the quartet with squares.
+                </span>
               </div>
               <div class="letter-row">
                 <span class="letter-symbol">ת</span>
-                <span class="letter-text">Quartet rotation: (א,ב,ג,ד) → (ג,ד,א,ב).</span>
+                <span class="letter-text">
+                  Quartet rotation: (א, ב, ג, ד) → (ג, ד, א, ב).
+                </span>
               </div>
               <div class="letter-row">
                 <span class="letter-symbol">A</span>
                 <span class="letter-text">
-                  Aleph-Olam: a special global register; not an operator in this
-                  version, but many letters read/write it.
+                  Aleph-Olam: hidden 23rd register used as a global scratch /
+                  summary cell.
+                </span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">סבב</span>
+                <span class="letter-text">
+                  Composite round: deep nonlinear mix on the quartet (used in
+                  this demo’s final step).
                 </span>
               </div>
             </div>
-
-            <p class="panel-body">
-              The composite instruction <strong>סבב</strong> performs a deep
-              mixing round on the quartet. Niqudded variants (e.g. בִ, גְ) are
-              defined in the VM and will be surfaced in future UI experiments.
-            </p>
           </article>
         </section>
       </main>
 
-          <footer class="site-footer">
-        <span class="footer-text">
-          IvritCode · A small glimpse of a larger dream.
-        </span>
+      <footer class="site-footer">
+        IvritCode · A small glimpse of a larger dream.
       </footer>
     </div>
 
-    <!-- Main script bundle (non-module so existing main.js still works) -->
-    <script src="./main.js"></script>
+    <!-- Self-contained IvritCode demo VM -->
+    <script>
+      // 23 registers: א–ת + A
+      const REGISTER_ORDER = [
+        "א",
+        "ב",
+        "ג",
+        "ד",
+        "ה",
+        "ו",
+        "ז",
+        "ח",
+        "ט",
+        "י",
+        "כ",
+        "ל",
+        "מ",
+        "נ",
+        "ס",
+        "ע",
+        "פ",
+        "צ",
+        "ק",
+        "ר",
+        "ש",
+        "ת",
+        "A",
+      ];
+      const REG_INDEX = Object.fromEntries(
+        REGISTER_ORDER.map((name, i) => [name, i])
+      );
+
+      const RA = REG_INDEX["א"];
+      const RB = REG_INDEX["ב"];
+      const RG = REG_INDEX["ג"];
+      const RD = REG_INDEX["ד"];
+      const RAO = REG_INDEX["A"];
+
+      function createZeroState() {
+        return new Array(REGISTER_ORDER.length).fill(0);
+      }
+      function cloneState(s) {
+        return s.slice();
+      }
+      function signOf(x) {
+        if (x > 0) return 1;
+        if (x < 0) return -1;
+        return 0;
+      }
+      function formatState(state) {
+        return REGISTER_ORDER.map((name, i) => `${name}=${state[i]}`).join("  ");
+      }
+
+      // Base letter semantics (subset used in demo + a few extras for completeness)
+      function applyLetter(state, letter) {
+        switch (letter) {
+          case "א":
+            return cloneState(state);
+          case "ב":
+            return opBet(state);
+          case "ג":
+            return opGimel(state);
+          case "ד":
+            return opDalet(state);
+          case "ה":
+            return opHei(state);
+          case "ו":
+            return opVav(state);
+          case "ז":
+            return opZayin(state);
+          case "ח":
+            return opChet(state);
+          case "ט":
+            return opTet(state);
+          case "י":
+            return opYod(state);
+          case "כ":
+            return opKaf(state);
+          case "ל":
+            return opLamed(state);
+          case "מ":
+            return opMem(state);
+          case "נ":
+            return opNun(state);
+          case "ס":
+            return opSamekh(state);
+          case "ע":
+            return opAyin(state);
+          case "פ":
+            return opPe(state);
+          case "צ":
+            return opTsadi(state);
+          case "ק":
+            return opQof(state);
+          case "ר":
+            return opResh(state);
+          case "ש":
+            return opShin(state);
+          case "ת":
+            return opTav(state);
+          case "סבב":
+            return opSovav(state);
+          default:
+            throw new Error("Unknown letter: " + letter);
+        }
+      }
+
+      function opBet(state) {
+        const next = cloneState(state);
+        next[RG] = state[RA] + state[RB];
+        return next;
+      }
+      function opGimel(state) {
+        const next = cloneState(state);
+        next[RD] = state[RA] * state[RB];
+        return next;
+      }
+      function opDalet(state) {
+        const next = cloneState(state);
+        const a = state[RA];
+        const b = state[RB];
+        next[RG] = b - a;
+        next[RD] = a - b;
+        return next;
+      }
+      function opHei(state) {
+        const next = cloneState(state);
+        next[REG_INDEX["ה"]] = signOf(state[RA]);
+        return next;
+      }
+      function opVav(state) {
+        const next = cloneState(state);
+        next[RA] = state[RB];
+        next[RB] = state[RA];
+        return next;
+      }
+      function opZayin(state) {
+        const next = cloneState(state);
+        next[RA] = state[RA] + 1;
+        return next;
+      }
+      function opChet(state) {
+        const next = cloneState(state);
+        next[RA] = state[RA] - 1;
+        return next;
+      }
+      function opTet(state) {
+        const next = cloneState(state);
+        next[RG] = state[RA] * state[RA];
+        return next;
+      }
+      function opYod(state) {
+        const next = cloneState(state);
+        next[RA] = state[RAO];
+        return next;
+      }
+      function opKaf(state) {
+        const next = cloneState(state);
+        const a = state[RA];
+        const b = state[RB];
+        const g = state[RG];
+        const d = state[RD];
+        next[RAO] = a + b + g + d;
+        return next;
+      }
+      function opLamed(state) {
+        const next = cloneState(state);
+        let sum = 0;
+        for (let i = 0; i < 22; i++) sum += state[i];
+        next[RAO] = sum;
+        return next;
+      }
+      function opMem(state) {
+        const next = cloneState(state);
+        const a = state[RA];
+        const b = state[RB];
+        const g = state[RG];
+        const d = state[RD];
+        next[RG] = Math.trunc((a + b + g + d) / 4);
+        return next;
+      }
+      function opNun(state) {
+        const next = cloneState(state);
+        next[RA] = -state[RA];
+        return next;
+      }
+      function opSamekh(state) {
+        const next = cloneState(state);
+        for (let i = 0; i < 22; i++) {
+          const src = (i - 1 + 22) % 22;
+          next[i] = state[src];
+        }
+        return next;
+      }
+      function opAyin(state) {
+        const next = cloneState(state);
+        let acc = 0;
+        for (let i = 0; i <= 10; i++) {
+          acc += state[i] * state[i + 11];
+        }
+        next[RAO] = acc;
+        return next;
+      }
+      function opPe(state) {
+        const next = cloneState(state);
+        next[RAO] = state[RA];
+        return next;
+      }
+      function opTsadi(state) {
+        const next = cloneState(state);
+        next[RAO] = signOf(state[RA] - state[RB]);
+        return next;
+      }
+      function opQof(state) {
+        const next = cloneState(state);
+        for (let i = 0; i < 22; i++) {
+          next[i] = state[21 - i];
+        }
+        return next;
+      }
+      function opResh(state) {
+        const next = cloneState(state);
+        const A = state[RAO];
+        next[RA] = A;
+        next[RB] = A + 1;
+        next[RG] = A + 2;
+        next[RD] = A + 3;
+        return next;
+      }
+      function opShin(state) {
+        const next = cloneState(state);
+        const a = state[RA];
+        const b = state[RB];
+        const g = state[RG];
+        const d = state[RD];
+        next[RA] = a * a + b;
+        next[RB] = b * b + g;
+        next[RG] = g * g + d;
+        next[RD] = d * d + a;
+        return next;
+      }
+      function opTav(state) {
+        const next = cloneState(state);
+        const a = state[RA];
+        const b = state[RB];
+        const g = state[RG];
+        const d = state[RD];
+        next[RA] = g;
+        next[RB] = d;
+        next[RG] = a;
+        next[RD] = b;
+        return next;
+      }
+      function opSovav(state) {
+        const next = cloneState(state);
+        const a = state[RA];
+        const b = state[RB];
+        const g = state[RG];
+        const d = state[RD];
+
+        const M0 = a + 3 * g;
+        const M1 = b + 5 * d;
+
+        const N0 = M0 + M1;
+        const N1 = M0 - M1;
+        const N2 = 3 * M0 - M1;
+        const N3 = 2 * M1 + a;
+
+        next[RA] = N0;
+        next[RB] = N1;
+        next[RG] = N2;
+        next[RD] = N3;
+        return next;
+      }
+
+      function runDemo(initialState) {
+        const program = ["א", "ב", "ג", "ת", "סבב"];
+        const trace = [];
+        let state = cloneState(initialState);
+        trace.push("Initial state:\n" + formatState(state) + "\n");
+        program.forEach((letter, idx) => {
+          const before = cloneState(state);
+          const after = applyLetter(state, letter);
+          trace.push(
+            `Step ${idx} — ${letter}\n` +
+              "Before: " +
+              formatState(before) +
+              "\n" +
+              "After : " +
+              formatState(after) +
+              "\n"
+          );
+          state = after;
+        });
+        trace.push("End of program.\nFinal state:\n" + formatState(state));
+        return trace.join("\n");
+      }
+
+      document.getElementById("run-btn").addEventListener("click", () => {
+        const r0 = parseInt(document.getElementById("r0").value || "0", 10);
+        const r1 = parseInt(document.getElementById("r1").value || "0", 10);
+        const r2 = parseInt(document.getElementById("r2").value || "0", 10);
+        const r3 = parseInt(document.getElementById("r3").value || "0", 10);
+
+        const state = createZeroState();
+        state[RA] = r0;
+        state[RB] = r1;
+        state[RG] = r2;
+        state[RD] = r3;
+
+        const output = runDemo(state);
+        const pre = document.getElementById("trace-output");
+        pre.textContent = output;
+      });
+    </script>
   </body>
 </html>
