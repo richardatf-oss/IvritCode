@@ -1,177 +1,344 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>IvritCode · Alpha Concept Demo</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="styles.css" />
-</head>
-<body>
-  <header class="site-header">
-    <div class="logo-stack">
-      <div class="logo-text">
-        <span class="logo-main">IVRIT<span class="logo-accent">CODE</span></span>
-        <span class="logo-badge">ALPHA · CONCEPT DEMO</span>
-      </div>
-      <div class="logo-subtitle">
-        Hebrew letters as opcodes. Niqqud &amp; trope as modifiers. A sacred machine language.
-      </div>
+  <head>
+    <meta charset="UTF-8" />
+    <title>IvritCode · Alpha Concept Demo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="IvritCode – Hebrew letters as opcodes, niqqud as modifiers. A tiny virtual machine exploring a sacred machine language."
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <div class="topbar-left">
+          <span class="logo-word">IVRIT<span class="logo-accent">CODE</span></span>
+          <span class="topbar-tag">ALPHA · CONCEPT DEMO</span>
+        </div>
+        <div class="topbar-right">
+          <a
+            href="https://github.com/richardatf-oss/IvritCode"
+            class="topbar-link"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            View on GitHub
+          </a>
+        </div>
+      </header>
+
+      <main class="layout-main">
+        <!-- Top row: explanation + interactive demo -->
+        <section class="layout-row">
+          <!-- Left panel: explanation -->
+          <article class="panel panel-left">
+            <h1 class="panel-title">What’s happening on this page?</h1>
+
+            <p class="panel-body">
+              You’re looking at a tiny virtual machine built out of Hebrew letters.
+              Under the hood there are <strong>23 registers</strong>:
+              <strong>א–ת</strong> plus <strong>A</strong>, the hidden
+              <em>Aleph-Olam</em> register.
+            </p>
+
+            <p class="panel-body">
+              In this demo, you choose four starting numbers. The machine loads
+              them into registers <strong>א, ב, ג, ד</strong>, then runs a short
+              IvritCode program on them.
+            </p>
+
+            <div class="demo-program">
+              <div class="demo-label">Demo program — the letters that run on your numbers:</div>
+              <div class="demo-sequence" id="demo-program-letters">
+                <span>א</span>
+                <span>→</span>
+                <span>ב</span>
+                <span>→</span>
+                <span>ג</span>
+                <span>→</span>
+                <span>ת</span>
+                <span>→</span>
+                <span>סבב</span>
+              </div>
+            </div>
+
+            <ul class="panel-list">
+              <li><strong>א</strong> quietly prepares the machine &amp; “locks in” this run (identity step).</li>
+              <li><strong>ב</strong> adds your first two numbers (א + ב → ג).</li>
+              <li><strong>ג</strong> multiplies them (א × ב → ד).</li>
+              <li><strong>ת</strong> rotates the quartet (א, ב, ג, ד).</li>
+              <li><strong>סבב</strong> performs a deeper cryptographic-style mix on the quartet.</li>
+            </ul>
+
+            <p class="panel-body">
+              All of this happens entirely in your browser. No network calls, no
+              signup, no wallet — just letters and numbers dancing for a moment.
+            </p>
+
+            <div class="chip-row">
+              <span class="chip chip-muted">NO SIGNUP</span>
+              <span class="chip chip-muted">NO WALLET</span>
+              <span class="chip chip-primary">JUST LETTERS &amp; MATH</span>
+            </div>
+          </article>
+
+          <!-- Right panel: interactive runner -->
+          <article class="panel panel-right">
+            <h2 class="panel-title">Try it: let the letters run</h2>
+
+            <p class="panel-body">
+              Choose four starting numbers. Click the button. Then open the trace
+              panel below to see what each instruction did, step by step.
+            </p>
+
+            <ol class="panel-steps">
+              <li>Type any whole numbers into the boxes below.</li>
+              <li>Click <strong>Run IvritCode Program</strong>.</li>
+              <li>
+                Open <strong>Show raw execution trace</strong> and scroll through
+                the steps.
+              </li>
+            </ol>
+
+            <form class="register-form" id="register-form">
+              <div class="register-row">
+                <label class="register-label" for="input-r0">
+                  R0 (first number) → א
+                </label>
+                <input
+                  id="input-r0"
+                  name="r0"
+                  type="number"
+                  inputmode="numeric"
+                  class="register-input"
+                  value="1"
+                />
+              </div>
+
+              <div class="register-row">
+                <label class="register-label" for="input-r1">
+                  R1 (second number) → ב
+                </label>
+                <input
+                  id="input-r1"
+                  name="r1"
+                  type="number"
+                  inputmode="numeric"
+                  class="register-input"
+                  value="2"
+                />
+              </div>
+
+              <div class="register-row">
+                <label class="register-label" for="input-r2">
+                  R2 → ג
+                </label>
+                <input
+                  id="input-r2"
+                  name="r2"
+                  type="number"
+                  inputmode="numeric"
+                  class="register-input"
+                  value="3"
+                />
+              </div>
+
+              <div class="register-row">
+                <label class="register-label" for="input-r3">
+                  R3 → ד
+                </label>
+                <input
+                  id="input-r3"
+                  name="r3"
+                  type="number"
+                  inputmode="numeric"
+                  class="register-input"
+                  value="4"
+                />
+              </div>
+
+              <button
+                type="button"
+                id="run-program-btn"
+                class="primary-button"
+              >
+                Run IvritCode Program
+              </button>
+            </form>
+
+            <details class="trace-details" id="trace-section">
+              <summary class="trace-summary">Show raw execution trace</summary>
+              <pre class="trace-output" id="trace-output">
+Press “Run IvritCode Program” to see the steps here.
+              </pre>
+            </details>
+
+            <section class="mini-panel">
+              <h3 class="mini-title">Letters &amp; niqqud in this demo</h3>
+              <p class="mini-body">
+                The VM already knows all <strong>22 letters</strong> as
+                operators, plus <strong>A</strong> as the Aleph-Olam register.
+                In future demos, you’ll also be able to attach
+                <strong>niqqud</strong>:
+              </p>
+              <ul class="mini-list">
+                <li><strong>ְ (sheva)</strong> — pure/query mode; effects are summarized into A.</li>
+                <li><strong>ִ (hiriq)</strong> — immediate mode; adds literal constants into the mix.</li>
+              </ul>
+              <p class="mini-body">
+                This page currently runs a fixed sequence
+                <code>א → ב → ג → ת → סבב</code> without niqqud, but the full
+                instruction set is implemented in <code>src/vm.ts</code> and
+                documented in <code>SPEC.md</code>.
+              </p>
+            </section>
+          </article>
+        </section>
+
+        <!-- Bottom row: curiosity + full letter reference -->
+        <section class="layout-row layout-row-bottom">
+          <article class="panel panel-bottom">
+            <h2 class="panel-title">If you’re just curious</h2>
+            <p class="panel-body">
+              At a simple level, IvritCode is a way of asking:
+            </p>
+            <ul class="panel-list">
+              <li>What if the Aleph-Bet itself was a tiny computer?</li>
+              <li>What if a story could also be a set of instructions?</li>
+              <li>What happens when letters push numbers around?</li>
+            </ul>
+            <p class="panel-body">
+              This page doesn’t try to prove anything. It just lets you play on
+              the border between <em>symbol</em>, <em>story</em>, and
+              <em>machine</em>.
+            </p>
+          </article>
+
+          <article class="panel panel-bottom">
+            <h2 class="panel-title">Letter reference (א–ת)</h2>
+            <p class="panel-body">
+              These are the base (unmodified) semantics of each letter in the
+              current VM. All act on the 23-register state
+              (א–ת + A/Aleph-Olam).
+            </p>
+
+            <div class="letter-grid">
+              <div class="letter-row">
+                <span class="letter-symbol">א</span>
+                <span class="letter-text">Identity / no-op. State is unchanged.</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">ב</span>
+                <span class="letter-text">Addition: ג = א + ב.</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">ג</span>
+                <span class="letter-text">Multiplication: ד = א × ב.</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">ד</span>
+                <span class="letter-text">Differences: ג = ב − א, ד = א − ב.</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">ה</span>
+                <span class="letter-text">Sign of Alef: ה = sign(א).</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">ו</span>
+                <span class="letter-text">Swap: א ↔ ב.</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">ז</span>
+                <span class="letter-text">Increment: א = א + 1.</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">ח</span>
+                <span class="letter-text">Decrement: א = א − 1.</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">ט</span>
+                <span class="letter-text">Square: ג = א².</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">י</span>
+                <span class="letter-text">Load from Aleph-Olam: א = A.</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">כ</span>
+                <span class="letter-text">Quartet sum: A = א + ב + ג + ד.</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">ל</span>
+                <span class="letter-text">Global sum: A = Σ(א–ת).</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">מ</span>
+                <span class="letter-text">Mean: ג = ⌊(א + ב + ג + ד) / 4⌋.</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">נ</span>
+                <span class="letter-text">Negate: א = −א.</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">ס</span>
+                <span class="letter-text">Rotate א–ת cyclically (א gets old ת, etc.).</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">ע</span>
+                <span class="letter-text">Dot product of halves (א–כ with ל–ת) → A.</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">פ</span>
+                <span class="letter-text">Expose Alef: A = א.</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">צ</span>
+                <span class="letter-text">Compare א and ב: A = sign(א − ב).</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">ק</span>
+                <span class="letter-text">Mirror: reverse the values of א–ת.</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">ר</span>
+                <span class="letter-text">Reseed: (א,ב,ג,ד) = (A, A+1, A+2, A+3).</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">ש</span>
+                <span class="letter-text">Non-linear mix over (א,ב,ג,ד) with squares.</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">ת</span>
+                <span class="letter-text">Quartet rotation: (א,ב,ג,ד) → (ג,ד,א,ב).</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">A</span>
+                <span class="letter-text">
+                  Aleph-Olam: a special global register; not an operator in this
+                  version, but many letters read/write it.
+                </span>
+              </div>
+            </div>
+
+            <p class="panel-body">
+              The composite instruction <strong>סבב</strong> performs a deep
+              mixing round on the quartet. Niqudded variants (e.g. בִ, גְ) are
+              defined in the VM and will be surfaced in future UI experiments.
+            </p>
+          </article>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        <span class="footer-text">
+          IvritCode · A small glimpse of a larger dream.
+        </span>
+      </footer>
     </div>
 
-    <a
-      class="gh-link"
-      href="https://github.com/richardatf-oss/IvritCode"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      View on GitHub
-    </a>
-  </header>
-
-  <main class="page-main">
-    <section class="grid-two">
-      <!-- LEFT: EXPLANATION -->
-      <article class="card">
-        <h2 class="card-title">What&rsquo;s happening on this page?</h2>
-        <p class="card-lead">
-          You&rsquo;re looking at a tiny machine built out of Hebrew letters. Each letter is
-          treated like an instruction. You pick a few starting numbers, and the letters go to
-          work on them.
-        </p>
-
-        <div class="demo-program">
-          <div class="demo-label">Demo program — the letters that run on your numbers</div>
-          <div class="demo-seq">
-            <span class="demo-letter">א</span>
-            <span class="demo-arrow">→</span>
-            <span class="demo-letter">ב</span>
-            <span class="demo-arrow">→</span>
-            <span class="demo-letter">ג</span>
-            <span class="demo-arrow">→</span>
-            <span class="demo-letter">ת</span>
-            <span class="demo-arrow">→</span>
-            <span class="demo-letter">סבב</span>
-          </div>
-        </div>
-
-        <p class="card-body">
-          No background in math or coding is needed. Just think of it like watching gears turn:
-        </p>
-
-        <ul class="bullet-list">
-          <li><strong>א</strong> quietly prepares the machine &amp; &ldquo;locks in&rdquo; this run.</li>
-          <li><strong>ב</strong> adds your first two numbers.</li>
-          <li><strong>ג</strong> multiplies them.</li>
-          <li><strong>ת</strong> stirs the values together.</li>
-          <li><strong>סבב</strong> performs a deeper cryptographic-style mix.</li>
-        </ul>
-
-        <p class="card-body">
-          Everything happens right in your browser: no signup, no wallet, nothing saved.
-          Just letters and numbers dancing for a moment.
-        </p>
-
-        <div class="pill-row">
-          <span class="pill pill-outline">No signup</span>
-          <span class="pill pill-outline">No wallet</span>
-          <span class="pill pill-solid">Just letters &amp; math</span>
-        </div>
-      </article>
-
-      <!-- RIGHT: INTERACTIVE -->
-      <article class="card">
-        <h2 class="card-title">Try it: let the letters run</h2>
-        <p class="card-body">
-          Choose four starting numbers. Click the button. Then open the trace panel to see
-          exactly what the machine did, step by step.
-        </p>
-
-        <ol class="steps-list">
-          <li>Type any whole numbers into the boxes below.</li>
-          <li>Click <strong>Run IvritCode Program</strong>.</li>
-          <li>
-            Open <strong>Show raw execution trace</strong> and scroll through the steps.
-          </li>
-        </ol>
-
-        <form class="register-form" id="register-form">
-          <div class="reg-row">
-            <label class="reg-field">
-              <span class="reg-label">R0 (first number)</span>
-              <input id="r0" name="r0" type="number" value="1" />
-            </label>
-            <label class="reg-field">
-              <span class="reg-label">R1 (second number)</span>
-              <input id="r1" name="r1" type="number" value="2" />
-            </label>
-          </div>
-          <div class="reg-row">
-            <label class="reg-field">
-              <span class="reg-label">R2</span>
-              <input id="r2" name="r2" type="number" value="3" />
-            </label>
-            <label class="reg-field">
-              <span class="reg-label">R3</span>
-              <input id="r3" name="r3" type="number" value="4" />
-            </label>
-          </div>
-
-          <button id="run-program" type="submit" class="primary-button">
-            Run IvritCode Program
-          </button>
-        </form>
-
-        <details class="trace-details" open>
-          <summary class="trace-summary">Show raw execution trace</summary>
-          <pre id="trace-output" class="trace-output">
-Press “Run IvritCode Program” to see the steps here.
-          </pre>
-        </details>
-      </article>
-    </section>
-
-    <section class="grid-two grid-bottom">
-      <article class="card">
-        <h3 class="card-subtitle">If you&rsquo;re just curious</h3>
-        <p class="card-body">
-          At a simple level, IvritCode is a way of asking:
-        </p>
-        <ul class="bullet-list">
-          <li>What if the Aleph-Bet itself was a tiny computer?</li>
-          <li>What if a story could also be a set of instructions?</li>
-          <li>What happens when letters push numbers around?</li>
-        </ul>
-        <p class="card-body">
-          This page doesn&rsquo;t prove anything. It just lets you play on the border between
-          symbol, story, and machine.
-        </p>
-      </article>
-
-      <article class="card">
-        <h3 class="card-subtitle">If you&rsquo;re a developer or researcher</h3>
-        <p class="card-body">
-          Under the hood, this demo is driven by a small virtual machine in modern JavaScript:
-        </p>
-        <ul class="bullet-list">
-          <li>Each letter in the demo has precise semantics.</li>
-          <li>Arithmetic is done in plain JavaScript numbers for readability.</li>
-          <li>
-            The deep mixing step <strong>סבב</strong> does a simple round of adds, multiplications,
-            and rotations.
-          </li>
-        </ul>
-        <p class="card-body">
-          Future versions will move back into TypeScript and finite fields, and experiment
-          with AIRs, proof systems, and more advanced cryptographic structure.
-        </p>
-      </article>
-    </section>
-  </main>
-
-  <footer class="site-footer">
-    <span>IvritCode · A small glimpse of a larger dream.</span>
-  </footer>
-
-  <script type="module" src="./main.js"></script>
-</body>
+    <!-- Main script bundle -->
+    <script type="module" src="./main.js"></script>
+  </body>
 </html>
