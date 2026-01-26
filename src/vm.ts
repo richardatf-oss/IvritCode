@@ -138,12 +138,11 @@ function opBet(state: State): State {
   return next;
 }
 
-// ג — Gimel: d = a * b
 function opGimel(state: State): State {
   const next = cloneState(state);
   const a = state[RA];
   const b = state[RB];
-  next[RD]] = a * b;
+  next[RD] = a * b;
   return next;
 }
 
