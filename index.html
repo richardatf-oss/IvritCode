@@ -1,741 +1,177 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>IvritCode · A Sacred Machine Language</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-    <link rel="stylesheet" href="./styles.css" />
-
-    <style>
-      :root {
-        --bg: #020311;
-        --bg-soft: #0b0f24;
-        --bg-softer: #151932;
-        --border-subtle: rgba(255, 255, 255, 0.12);
-        --accent: #7ee0ff;
-        --accent-strong: #3bd6ff;
-        --accent-soft: rgba(123, 208, 255, 0.2);
-        --accent-pink: #ff7edb;
-        --text-main: #f5f7ff;
-        --text-muted: #9da3c7;
-        --radius-lg: 1rem;
-        --shadow-soft: 0 24px 60px rgba(0, 0, 0, 0.75);
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        margin: 0;
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-          sans-serif;
-        background:
-          radial-gradient(circle at 15% 0%, #28408e 0, transparent 55%),
-          radial-gradient(circle at 85% 15%, #5b128d 0, transparent 50%),
-          radial-gradient(circle at 50% 100%, #091225 0, #020311 55%);
-        color: var(--text-main);
-        min-height: 100vh;
-      }
-
-      a {
-        color: var(--accent-strong);
-        text-decoration: none;
-      }
-      a:hover {
-        text-decoration: underline;
-      }
-
-      .page {
-        max-width: 1120px;
-        margin: 0 auto;
-        padding: 2rem 1.5rem 3rem;
-      }
-
-      header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 1rem;
-        margin-bottom: 2rem;
-      }
-
-      .brand {
-        display: flex;
-        flex-direction: column;
-        gap: 0.35rem;
-      }
-
-      .brand-title-row {
-        display: flex;
-        align-items: baseline;
-        gap: 0.75rem;
-      }
-
-      h1 {
-        margin: 0;
-        font-size: 2.2rem;
-        letter-spacing: 0.18em;
-        text-transform: uppercase;
-      }
-
-      .brand-glow {
-        font-size: 0.85rem;
-        padding: 0.16rem 0.9rem;
-        border-radius: 999px;
-        border: 1px solid rgba(255, 255, 255, 0.28);
-        background: radial-gradient(circle at 0 0, #40e0ff33 0, transparent 65%);
-        text-transform: uppercase;
-        letter-spacing: 0.16em;
-      }
-
-      .subtitle {
-        margin: 0;
-        font-size: 0.95rem;
-        color: var(--text-muted);
-      }
-
-      .nav-links {
-        display: flex;
-        gap: 0.75rem;
-        font-size: 0.9rem;
-      }
-
-      .pill-link {
-        padding: 0.45rem 0.95rem;
-        border-radius: 999px;
-        border: 1px solid var(--border-subtle);
-        background: rgba(3, 5, 20, 0.9);
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
-      }
-
-      .pill-link::before {
-        content: "★";
-        font-size: 0.8rem;
-        color: var(--accent);
-      }
-
-      main {
-        display: flex;
-        flex-direction: column;
-        gap: 1.75rem;
-      }
-
-      .hero {
-        display: grid;
-        grid-template-columns: minmax(0, 1.55fr) minmax(0, 1.45fr);
-        gap: 1.5rem;
-        align-items: stretch;
-      }
-
-      @media (max-width: 900px) {
-        .hero {
-          grid-template-columns: minmax(0, 1fr);
-        }
-      }
-
-      .card {
-        position: relative;
-        background: radial-gradient(
-            circle at top left,
-            rgba(140, 220, 255, 0.14),
-            transparent 60%
-          ),
-          radial-gradient(circle at bottom right, #171d3c, #0b0f24 60%);
-        border-radius: var(--radius-lg);
-        border: 1px solid rgba(255, 255, 255, 0.14);
-        padding: 1.3rem 1.4rem;
-        box-shadow: var(--shadow-soft);
-        overflow: hidden;
-      }
-
-      .card::before {
-        content: "";
-        position: absolute;
-        inset: -1px;
-        border-radius: inherit;
-        border: 1px solid transparent;
-        background: linear-gradient(
-          120deg,
-          rgba(122, 208, 255, 0.8),
-          rgba(255, 126, 219, 0.8),
-          rgba(122, 208, 255, 0.8)
-        );
-        opacity: 0;
-        z-index: -1;
-        transition: opacity 0.35s ease;
-      }
-
-      .card:hover::before {
-        opacity: 0.55;
-      }
-
-      .card h2 {
-        margin-top: 0;
-        font-size: 1.2rem;
-      }
-
-      .tagline {
-        font-size: 1.1rem;
-        margin: 0 0 0.6rem;
-      }
-
-      .hero-text p {
-        margin: 0.4rem 0;
-        color: var(--text-muted);
-        font-size: 0.96rem;
-      }
-
-      .hero-bullets {
-        margin: 0.6rem 0 0;
-        padding-left: 1.1rem;
-        color: var(--text-muted);
-        font-size: 0.94rem;
-      }
-
-      .hero-bullets li {
-        margin: 0.2rem 0;
-      }
-
-      .chip-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.45rem;
-        margin-top: 0.85rem;
-      }
-
-      .chip {
-        font-size: 0.78rem;
-        padding: 0.25rem 0.65rem;
-        border-radius: 999px;
-        border: 1px solid var(--accent-soft);
-        background: rgba(7, 15, 26, 0.9);
-        color: var(--accent);
-        text-transform: uppercase;
-        letter-spacing: 0.09em;
-      }
-
-      .chip.pink {
-        color: var(--accent-pink);
-        border-color: rgba(255, 126, 219, 0.4);
-      }
-
-      .program-strip {
-        margin-top: 0.75rem;
-        padding: 0.55rem 0.8rem;
-        border-radius: 0.7rem;
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        background: linear-gradient(
-          90deg,
-          rgba(123, 208, 255, 0.2),
-          rgba(255, 126, 219, 0.18)
-        );
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-      }
-
-      .program-strip-label {
-        font-size: 0.7rem;
-        letter-spacing: 0.16em;
-        text-transform: uppercase;
-        color: var(--text-muted);
-      }
-
-      .program-strip-main {
-        font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont,
-          sans-serif;
-        font-size: 1.1rem;
-        letter-spacing: 0.16em;
-      }
-
-      .program-strip-main span.letter {
-        font-size: 1.25rem;
-      }
-
-      /* Interactive controls */
-      .how-to-list {
-        margin: 0.4rem 0 0.7rem;
-        padding-left: 1.1rem;
-        color: var(--text-muted);
-        font-size: 0.9rem;
-      }
-
-      .how-to-list li {
-        margin: 0.15rem 0;
-      }
-
-      .controls {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 0.6rem;
-        margin: 0.4rem 0 0.8rem;
-      }
-
-      @media (max-width: 640px) {
-        .controls {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-      }
-
-      .control-group {
-        display: flex;
-        flex-direction: column;
-        gap: 0.2rem;
-        font-size: 0.85rem;
-      }
-
-      .control-group label {
-        color: var(--text-muted);
-      }
-
-      .control-group input[type="number"] {
-        width: 100%;
-        border-radius: 0.5rem;
-        border: 1px solid var(--border-subtle);
-        padding: 0.3rem 0.5rem;
-        background: rgba(7, 9, 24, 0.96);
-        color: var(--text-main);
-        font-size: 0.9rem;
-      }
-
-      button#run-btn {
-        margin-top: 0.45rem;
-        padding: 0.5rem 1.1rem;
-        border-radius: 999px;
-        border: 1px solid var(--accent-soft);
-        background: linear-gradient(110deg, #1b78a7, #3bd6ff, #ff7edb);
-        color: #050615;
-        font-size: 0.9rem;
-        cursor: pointer;
-        font-weight: 600;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.75);
-        transition: transform 0.12s ease, box-shadow 0.12s ease,
-          filter 0.12s ease;
-      }
-
-      button#run-btn:hover {
-        filter: brightness(1.05);
-        transform: translateY(-1px);
-        box-shadow: 0 16px 38px rgba(0, 0, 0, 0.85);
-      }
-
-      /* Trace block */
-      details {
-        margin-top: 0.9rem;
-        border-radius: 0.8rem;
-        border: 1px solid var(--border-subtle);
-        background: rgba(5, 8, 25, 0.96);
-        overflow: hidden;
-      }
-
-      summary {
-        list-style: none;
-        cursor: pointer;
-        padding: 0.6rem 0.85rem;
-        font-size: 0.9rem;
-      }
-
-      summary::marker,
-      summary::-webkit-details-marker {
-        display: none;
-      }
-
-      summary span {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.35rem;
-      }
-
-      summary span::before {
-        content: "▸";
-        font-size: 0.8rem;
-        transform-origin: center;
-        transition: transform 0.18s ease;
-      }
-
-      details[open] summary span::before {
-        transform: rotate(90deg);
-      }
-
-      details .details-body {
-        padding: 0.6rem 0.8rem 0.8rem;
-        border-top: 1px solid var(--border-subtle);
-        background: var(--bg-softer);
-      }
-
-      #app pre {
-        margin: 0;
-        font-family: "JetBrains Mono", "Fira Code", Menlo, Monaco, Consolas,
-          "Courier New", monospace;
-        font-size: 0.8rem;
-        white-space: pre-wrap;
-        word-break: break-word;
-      }
-
-      .trace-legend {
-        margin-top: 0.55rem;
-        font-size: 0.78rem;
-        color: var(--text-muted);
-      }
-
-      /* Lower sections */
-      .section-grid {
-        display: grid;
-        grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.1fr);
-        gap: 1.5rem;
-      }
-
-      @media (max-width: 900px) {
-        .section-grid {
-          grid-template-columns: minmax(0, 1fr);
-        }
-      }
-
-      .section-title {
-        margin: 0 0 0.7rem;
-        font-size: 1.05rem;
-      }
-
-      .muted {
-        color: var(--text-muted);
-        font-size: 0.9rem;
-      }
-
-      .list-columns {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-        gap: 0.75rem;
-      }
-
-      .list-columns ul {
-        margin: 0;
-        padding-left: 1.05rem;
-        font-size: 0.9rem;
-        color: var(--text-muted);
-      }
-
-      .list-columns li {
-        margin: 0.15rem 0;
-      }
-
-      /* Opcode table */
-      table.opcode-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 0.5rem;
-        font-size: 0.86rem;
-      }
-
-      table.opcode-table th,
-      table.opcode-table td {
-        padding: 0.4rem 0.35rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-      }
-
-      table.opcode-table th {
-        text-align: left;
-        font-weight: 600;
-        color: var(--text-muted);
-      }
-
-      table.opcode-table td:nth-child(1) {
-        font-size: 1rem;
-      }
-
-      .footer {
-        margin-top: 2.3rem;
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        text-align: center;
-      }
-
-      /* Soft header glow animation */
-      @keyframes headGlow {
-        0% {
-          text-shadow: 0 0 12px rgba(123, 208, 255, 0.5),
-            0 0 24px rgba(91, 143, 255, 0.4);
-        }
-        50% {
-          text-shadow: 0 0 18px rgba(123, 208, 255, 0.9),
-            0 0 36px rgba(255, 126, 219, 0.6);
-        }
-        100% {
-          text-shadow: 0 0 12px rgba(123, 208, 255, 0.5),
-            0 0 24px rgba(91, 143, 255, 0.4);
-        }
-      }
-
-      h1 {
-        animation: headGlow 6s ease-in-out infinite;
-      }
-    </style>
-  </head>
-
-  <body>
-    <div class="page">
-      <header>
-        <div class="brand">
-          <div class="brand-title-row">
-            <h1>IVRITCODE</h1>
-            <div class="brand-glow">alpha · concept demo</div>
-          </div>
-          <p class="subtitle">
-            Hebrew letters as opcodes. Niqqud &amp; trope as modifiers. A sacred
-            machine language.
-          </p>
-        </div>
-        <nav class="nav-links">
-          <a
-            class="pill-link"
-            href="https://github.com/richardatf-oss/IvritCode"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            View on GitHub
-          </a>
-        </nav>
-      </header>
-
-      <main>
-        <!-- HERO -->
-        <section class="hero">
-          <!-- Explanation -->
-          <div class="card hero-text">
-            <h2 class="tagline">What’s happening on this page?</h2>
-            <p>
-              You’re looking at a tiny machine built out of Hebrew letters. Each
-              letter is treated like an instruction. You pick a few starting
-              numbers, and the letters go to work on them.
-            </p>
-            <div class="program-strip">
-              <div class="program-strip-label">
-                Demo program · the letters that run on your numbers
-              </div>
-              <div class="program-strip-main">
-                <span class="letter">א</span> → <span class="letter">ב</span> →
-                <span class="letter">ג</span> → <span class="letter">ד</span> →
-                <span class="letter">סבב</span>
-              </div>
-            </div>
-            <p style="margin-top: 0.7rem;">
-              No background in math or coding is needed. Just think of it like
-              watching gears turn:
-            </p>
-            <ul class="hero-bullets">
-              <li><strong>א</strong> quietly prepares the machine &amp; “locks in” this run.</li>
-              <li><strong>ב</strong> adds your first two numbers.</li>
-              <li><strong>ג</strong> multiplies them.</li>
-              <li><strong>ד</strong> stirs the values together.</li>
-              <li><strong>סבב</strong> performs a deep cryptographic-style mix.</li>
-            </ul>
-            <p style="margin-top: 0.65rem; color: var(--text-muted); font-size: 0.9rem;">
-              Everything happens right in your browser: no signup, no wallet,
-              nothing saved. Just letters and numbers dancing for a moment.
-            </p>
-            <div class="chip-row">
-              <span class="chip">No signup</span>
-              <span class="chip">No wallet</span>
-              <span class="chip pink">Just letters &amp; math</span>
-            </div>
-          </div>
-
-          <!-- Interactive demo -->
-          <div class="card">
-            <h2>Try It: Let the Letters Run</h2>
-            <p class="muted">
-              Choose four starting numbers. Click the button. Then open the
-              trace panel to see exactly what the machine did, step by step.
-            </p>
-            <ol class="how-to-list">
-              <li>Type any whole numbers into the boxes below.</li>
-              <li>Click <strong>Run IvritCode Program</strong>.</li>
-              <li>Open “Show raw execution trace” and scroll through the steps.</li>
-            </ol>
-
-            <div class="controls">
-              <div class="control-group">
-                <label for="r0-input">R0 (first number)</label>
-                <input id="r0-input" type="number" value="1" />
-              </div>
-              <div class="control-group">
-                <label for="r1-input">R1 (second number)</label>
-                <input id="r1-input" type="number" value="2" />
-              </div>
-              <div class="control-group">
-                <label for="r2-input">R2</label>
-                <input id="r2-input" type="number" value="3" />
-              </div>
-              <div class="control-group">
-                <label for="r3-input">R3</label>
-                <input id="r3-input" type="number" value="4" />
-              </div>
-            </div>
-
-            <button
-              id="run-btn"
-              type="button"
-              onclick="window.runIvritCode && window.runIvritCode()"
-            >
-              Run IvritCode Program
-            </button>
-
-            <details>
-              <summary><span>Show raw execution trace</span></summary>
-              <div class="details-body">
-                <div id="app">
-                  <!-- main.js will render the trace here -->
-                </div>
-                <div class="trace-legend">
-                  <strong>How to read a line:</strong><br />
-                  <code>t=3</code> – step number in the run<br />
-                  <code>pc</code> – where we are in the letter sequence<br />
-                  <code>op</code> – which letter ran at this step<br />
-                  <code>regs=[R0,R1,R2,R3]</code> – the four visible numbers<br />
-                  <code>c, h, z</code> – hidden numbers the machine keeps for
-                  internal consistency &amp; cryptography.
-                </div>
-              </div>
-            </details>
-          </div>
-        </section>
-
-        <!-- Deeper explanation + opcode table -->
-        <section class="section-grid">
-          <div class="card">
-            <h2 class="section-title">If You’re Just Curious</h2>
-            <p class="muted">
-              At a simple level, IvritCode is a way of asking:
-            </p>
-            <div class="list-columns" style="margin-top: 0.4rem;">
-              <ul>
-                <li>What if the Aleph-Bet itself was a tiny computer?</li>
-                <li>What if a story could also be a set of instructions?</li>
-                <li>What happens when letters push numbers around?</li>
-              </ul>
-              <ul>
-                <li>No background knowledge required.</li>
-                <li>You can’t break anything by experimenting.</li>
-                <li>
-                  Same letters + same numbers = same result, every time.
-                </li>
-              </ul>
-            </div>
-            <p class="muted" style="margin-top: 0.8rem;">
-              Future versions of this site will include a visual playground
-              where you can drag letters onto a line, press play, and watch the
-              machine animate without ever seeing raw numbers.
-            </p>
-          </div>
-
-          <div class="card">
-            <h2 class="section-title">If You’re a Developer or Researcher</h2>
-            <p class="muted">
-              Under the hood, this demo is driven by a small virtual machine in
-              TypeScript:
-            </p>
-            <ul class="hero-bullets" style="margin-top: 0.3rem;">
-              <li>
-                Each letter in the demo has precise semantics in
-                <code>src/vm.ts</code>.
-              </li>
-              <li>
-                Arithmetic is done in a finite field (<code>src/field.ts</code>).
-              </li>
-              <li>
-                The deep mixing step <strong>סבב</strong> uses a
-                Poseidon-inspired round (<code>src/round.ts</code>).
-              </li>
-            </ul>
-            <p class="muted" style="margin-top: 0.7rem;">
-              The VM is structured so its execution trace can be expressed as an
-              AIR (Arithmetic Intermediate Representation), making it natural to
-              embed inside zk-VMs and proof systems.
-            </p>
-          </div>
-        </section>
-
-        <section class="card">
-          <h2 class="section-title">Letters Used in This Demo</h2>
-          <p class="muted">
-            This first version uses a short alphabet of operations. More letters
-            (and niqqud/trope modifiers) will be added over time.
-          </p>
-          <table class="opcode-table">
-            <thead>
-              <tr>
-                <th>Letter</th>
-                <th>Name</th>
-                <th>What it does in the machine</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>א</td>
-                <td>Aleph</td>
-                <td>
-                  Leaves your visible registers as they are, but updates hidden
-                  state so this run is cryptographically tied to this program
-                  and position in the code.
-                </td>
-              </tr>
-              <tr>
-                <td>ב</td>
-                <td>Bet</td>
-                <td>
-                  Adds the first two registers: <code>R0 = R0 + R1</code>.
-                </td>
-              </tr>
-              <tr>
-                <td>ג</td>
-                <td>Gimel</td>
-                <td>
-                  Multiplies the first two registers:
-                  <code>R0 = R0 × R1</code>.
-                </td>
-              </tr>
-              <tr>
-                <td>ד</td>
-                <td>Dalet</td>
-                <td>
-                  Stirs <code>R0, R1, R2</code> together using a linear
-                  combination, leaving <code>R3</code> unchanged.
-                </td>
-              </tr>
-              <tr>
-                <td>סבב</td>
-                <td>Sovev</td>
-                <td>
-                  Applies a Poseidon-style round to
-                  <code>[R0,R1,R2,R3,C]</code>, giving a cryptographic
-                  permutation of the state.
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </section>
-
-        <div class="footer">
-          IvritCode · A Sacred Machine Language · ©
-          <span id="year"></span>
-        </div>
-      </main>
+<head>
+  <meta charset="UTF-8" />
+  <title>IvritCode · Alpha Concept Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="logo-stack">
+      <div class="logo-text">
+        <span class="logo-main">IVRIT<span class="logo-accent">CODE</span></span>
+        <span class="logo-badge">ALPHA · CONCEPT DEMO</span>
+      </div>
+      <div class="logo-subtitle">
+        Hebrew letters as opcodes. Niqqud &amp; trope as modifiers. A sacred machine language.
+      </div>
     </div>
 
-    <script>
-      (function () {
-        var el = document.getElementById("year");
-        if (el) el.textContent = String(new Date().getFullYear());
-      })();
-    </script>
+    <a
+      class="gh-link"
+      href="https://github.com/richardatf-oss/IvritCode"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      View on GitHub
+    </a>
+  </header>
 
-    <!-- Bundled JS output -->
-    <script src="./main.js"></script>
-  </body>
+  <main class="page-main">
+    <section class="grid-two">
+      <!-- LEFT: EXPLANATION -->
+      <article class="card">
+        <h2 class="card-title">What&rsquo;s happening on this page?</h2>
+        <p class="card-lead">
+          You&rsquo;re looking at a tiny machine built out of Hebrew letters. Each letter is
+          treated like an instruction. You pick a few starting numbers, and the letters go to
+          work on them.
+        </p>
+
+        <div class="demo-program">
+          <div class="demo-label">Demo program — the letters that run on your numbers</div>
+          <div class="demo-seq">
+            <span class="demo-letter">א</span>
+            <span class="demo-arrow">→</span>
+            <span class="demo-letter">ב</span>
+            <span class="demo-arrow">→</span>
+            <span class="demo-letter">ג</span>
+            <span class="demo-arrow">→</span>
+            <span class="demo-letter">ת</span>
+            <span class="demo-arrow">→</span>
+            <span class="demo-letter">סבב</span>
+          </div>
+        </div>
+
+        <p class="card-body">
+          No background in math or coding is needed. Just think of it like watching gears turn:
+        </p>
+
+        <ul class="bullet-list">
+          <li><strong>א</strong> quietly prepares the machine &amp; &ldquo;locks in&rdquo; this run.</li>
+          <li><strong>ב</strong> adds your first two numbers.</li>
+          <li><strong>ג</strong> multiplies them.</li>
+          <li><strong>ת</strong> stirs the values together.</li>
+          <li><strong>סבב</strong> performs a deeper cryptographic-style mix.</li>
+        </ul>
+
+        <p class="card-body">
+          Everything happens right in your browser: no signup, no wallet, nothing saved.
+          Just letters and numbers dancing for a moment.
+        </p>
+
+        <div class="pill-row">
+          <span class="pill pill-outline">No signup</span>
+          <span class="pill pill-outline">No wallet</span>
+          <span class="pill pill-solid">Just letters &amp; math</span>
+        </div>
+      </article>
+
+      <!-- RIGHT: INTERACTIVE -->
+      <article class="card">
+        <h2 class="card-title">Try it: let the letters run</h2>
+        <p class="card-body">
+          Choose four starting numbers. Click the button. Then open the trace panel to see
+          exactly what the machine did, step by step.
+        </p>
+
+        <ol class="steps-list">
+          <li>Type any whole numbers into the boxes below.</li>
+          <li>Click <strong>Run IvritCode Program</strong>.</li>
+          <li>
+            Open <strong>Show raw execution trace</strong> and scroll through the steps.
+          </li>
+        </ol>
+
+        <form class="register-form" id="register-form">
+          <div class="reg-row">
+            <label class="reg-field">
+              <span class="reg-label">R0 (first number)</span>
+              <input id="r0" name="r0" type="number" value="1" />
+            </label>
+            <label class="reg-field">
+              <span class="reg-label">R1 (second number)</span>
+              <input id="r1" name="r1" type="number" value="2" />
+            </label>
+          </div>
+          <div class="reg-row">
+            <label class="reg-field">
+              <span class="reg-label">R2</span>
+              <input id="r2" name="r2" type="number" value="3" />
+            </label>
+            <label class="reg-field">
+              <span class="reg-label">R3</span>
+              <input id="r3" name="r3" type="number" value="4" />
+            </label>
+          </div>
+
+          <button id="run-program" type="submit" class="primary-button">
+            Run IvritCode Program
+          </button>
+        </form>
+
+        <details class="trace-details" open>
+          <summary class="trace-summary">Show raw execution trace</summary>
+          <pre id="trace-output" class="trace-output">
+Press “Run IvritCode Program” to see the steps here.
+          </pre>
+        </details>
+      </article>
+    </section>
+
+    <section class="grid-two grid-bottom">
+      <article class="card">
+        <h3 class="card-subtitle">If you&rsquo;re just curious</h3>
+        <p class="card-body">
+          At a simple level, IvritCode is a way of asking:
+        </p>
+        <ul class="bullet-list">
+          <li>What if the Aleph-Bet itself was a tiny computer?</li>
+          <li>What if a story could also be a set of instructions?</li>
+          <li>What happens when letters push numbers around?</li>
+        </ul>
+        <p class="card-body">
+          This page doesn&rsquo;t prove anything. It just lets you play on the border between
+          symbol, story, and machine.
+        </p>
+      </article>
+
+      <article class="card">
+        <h3 class="card-subtitle">If you&rsquo;re a developer or researcher</h3>
+        <p class="card-body">
+          Under the hood, this demo is driven by a small virtual machine in modern JavaScript:
+        </p>
+        <ul class="bullet-list">
+          <li>Each letter in the demo has precise semantics.</li>
+          <li>Arithmetic is done in plain JavaScript numbers for readability.</li>
+          <li>
+            The deep mixing step <strong>סבב</strong> does a simple round of adds, multiplications,
+            and rotations.
+          </li>
+        </ul>
+        <p class="card-body">
+          Future versions will move back into TypeScript and finite fields, and experiment
+          with AIRs, proof systems, and more advanced cryptographic structure.
+        </p>
+      </article>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <span>IvritCode · A small glimpse of a larger dream.</span>
+  </footer>
+
+  <script type="module" src="./main.js"></script>
+</body>
 </html>
