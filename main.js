@@ -1,10 +1,10 @@
 // main.js
-// Tiny in-browser IvritCode demo wired to the same semantics as src/vm.ts.
-// 23 registers: א–ת + A (Aleph-Olam). Program: א → ב → ג → ת → סבב.
+// IvritCode in-browser demo: 23-register VM (א–ת + A) with user-defined program.
+// This mirrors the v0.1 semantics from src/vm.ts (no niqqud layer yet).
 
 (function () {
   // -------------------------------
-  // VM core (mirror of src/vm.ts)
+  // VM core
   // -------------------------------
 
   const REGISTER_ORDER = [
@@ -61,7 +61,7 @@
     return REGISTER_ORDER.map((name, i) => `${name}=${state[i]}`).join("  ");
   }
 
-  // --- base letter semantics (no niqqud) ---
+  // --- base letter semantics (no niqqud yet) ---
 
   function applyLetter(state, letter) {
     switch (letter) {
@@ -335,16 +335,55 @@
     return next;
   }
 
-  // Run fixed demo program and produce a textual trace.
-  function runDemo(initialState) {
-    const program = ["א", "ב", "ג", "ת", "סבב"];
+  // -------------------------------
+  // Program parsing + runner
+  // -------------------------------
+
+  const DEFAULT_PROGRAM = ["א", "ב", "ג", "ת", "סבב"];
+
+  function parseProgramInput(raw) {
+    if (!raw) return DEFAULT_PROGRAM.slice();
+
+    // Normalize common separators: arrows, "->", commas -> spaces
+    let s = raw
+      .replace(/->/g, " ")
+      .replace(/→/g, " ")
+      .replace(/,/g, " ")
+      .trim();
+
+    if (!s) return DEFAULT_PROGRAM.slice();
+
+    const tokens = s.split(/\s+/);
+    const ops = [];
+
+    for (const token of tokens) {
+      if (!token) continue;
+
+      // composite op stays as one token
+      if (token === "סבב") {
+        ops.push("סבב");
+        continue;
+      }
+
+      // otherwise, walk the characters and keep א–ת
+      for (const ch of token) {
+        if (ch >= "א" && ch <= "ת") {
+          ops.push(ch);
+        }
+      }
+    }
+
+    return ops.length > 0 ? ops : DEFAULT_PROGRAM.slice();
+  }
+
+  function runProgram(initialState, programLetters) {
     const trace = [];
     let state = cloneState(initialState);
 
     trace.push("Initial state:");
     trace.push(formatState(state), "");
 
-    program.forEach((letter, idx) => {
+    programLetters.forEach((letter, idx) => {
       const before = cloneState(state);
       const after = applyLetter(state, letter);
 
@@ -376,6 +415,7 @@
     const r1Input = document.getElementById("r1");
     const r2Input = document.getElementById("r2");
     const r3Input = document.getElementById("r3");
+    const programInput = document.getElementById("program-input");
     const traceEl = document.getElementById("trace-output");
 
     if (!r0Input || !r1Input || !r2Input || !r3Input || !traceEl) {
@@ -387,6 +427,9 @@
     const b0 = safeParseInt(r1Input.value, 0);
     const g0 = safeParseInt(r2Input.value, 0);
     const d0 = safeParseInt(r3Input.value, 0);
+    const rawProgram = programInput ? programInput.value : "";
+
+    const programLetters = parseProgramInput(rawProgram);
 
     const state = createZeroState();
     state[RA] = a0;
@@ -394,7 +437,7 @@
     state[RG] = g0;
     state[RD] = d0;
 
-    const output = runDemo(state);
+    const output = runProgram(state, programLetters);
     traceEl.textContent = output;
   }
 
