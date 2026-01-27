@@ -8,15 +8,17 @@
       name="description"
       content="IvritCode – Hebrew letters as opcodes, niqqud as modifiers. A tiny virtual machine exploring a sacred machine language."
     />
+
+    <!-- Your existing styling -->
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <div class="page-shell">
       <header class="topbar">
         <div class="topbar-left">
-          <span class="logo-word"
-            >IVRIT<span class="logo-accent">CODE</span></span
-          >
+          <span class="logo-word">
+            IVRIT<span class="logo-accent">CODE</span>
+          </span>
           <span class="topbar-tag">ALPHA · CONCEPT DEMO</span>
         </div>
         <div class="topbar-right">
@@ -32,29 +34,30 @@
       </header>
 
       <main class="layout-main">
-        <!-- Top row -->
+        <!-- Top row: explanation + demo -->
         <section class="layout-row">
+          <!-- Left: explanation -->
           <article class="panel panel-left">
             <h1 class="panel-title">What’s happening on this page?</h1>
 
             <p class="panel-body">
               You’re looking at a tiny virtual machine built out of Hebrew
-              letters. Under the hood there are
-              <strong>23 registers</strong>: <strong>א–ת</strong> plus
-              <strong>A</strong>, the hidden <em>Aleph-Olam</em> register.
+              letters. Under the hood there are <strong>23 registers</strong>:
+              <strong>א–ת</strong> plus <strong>A</strong>, the hidden
+              <em>Aleph-Olam</em> register.
             </p>
 
             <p class="panel-body">
               In this demo, you choose four starting numbers. The machine loads
-              them into registers <strong>א, ב, ג, ד</strong>, then runs a short
-              IvritCode program on them.
+              them into registers <strong>א, ב, ג, ד</strong>, then runs an
+              IvritCode program that you specify as a sequence of letters.
             </p>
 
             <div class="demo-program">
               <div class="demo-label">
-                Demo program — the letters that run on your numbers:
+                Example program — the letters that run on your numbers:
               </div>
-              <div class="demo-sequence" id="demo-program-letters">
+              <div class="demo-sequence">
                 <span>א</span>
                 <span>→</span>
                 <span>ב</span>
@@ -81,8 +84,8 @@
             </ul>
 
             <p class="panel-body">
-              Everything happens in your browser: no network calls, no signup, no
-              wallet — just letters and numbers dancing for a moment.
+              Everything happens in your browser: no network calls, no signup,
+              no wallet — just letters and numbers dancing for a moment.
             </p>
 
             <div class="chip-row">
@@ -92,20 +95,27 @@
             </div>
           </article>
 
+          <!-- Right: interactive runner -->
           <article class="panel panel-right">
             <h2 class="panel-title">Try it: let the letters run</h2>
 
             <p class="panel-body">
-              Choose four starting numbers. Click the button. Then open the trace
-              panel below to see what each instruction did, step by step.
+              Choose four starting numbers. Then enter a sequence of Hebrew
+              letters (and the composite <strong>סבב</strong>) to use as the
+              program.
             </p>
 
             <ol class="panel-steps">
-              <li>Type any whole numbers into the boxes below.</li>
+              <li>Type any whole numbers into the R0–R3 boxes.</li>
+              <li>
+                Enter your program as letters, e.g.
+                <code>א ב ג ת סבב</code> or
+                <code>א→ב→ג→ת→סבב</code>.
+              </li>
               <li>Click <strong>Run IvritCode Program</strong>.</li>
               <li>
-                Open <strong>Show raw execution trace</strong> and scroll through
-                the steps.
+                Open the trace panel and scroll through what each instruction
+                did.
               </li>
             </ol>
 
@@ -122,6 +132,7 @@
                   value="1"
                 />
               </div>
+
               <div class="register-row">
                 <label class="register-label" for="r1">
                   R1 (second number) → ב
@@ -134,6 +145,7 @@
                   value="2"
                 />
               </div>
+
               <div class="register-row">
                 <label class="register-label" for="r2">R2 → ג</label>
                 <input
@@ -144,6 +156,7 @@
                   value="3"
                 />
               </div>
+
               <div class="register-row">
                 <label class="register-label" for="r3">R3 → ד</label>
                 <input
@@ -153,6 +166,22 @@
                   class="register-input"
                   value="4"
                 />
+              </div>
+
+              <div class="register-row">
+                <label class="register-label" for="program-input">
+                  Program (letters, left → right)
+                </label>
+                <input
+                  id="program-input"
+                  type="text"
+                  class="register-input"
+                  value="א→ב→ג→ת→סבב"
+                />
+                <small class="program-hint">
+                  You can separate with spaces or arrows. Examples:
+                  <code>א ב ג ת סבב</code> or <code>א→ב→ג→ת→סבב</code>.
+                </small>
               </div>
 
               <button type="button" id="run-btn" class="primary-button">
@@ -172,20 +201,21 @@ Press “Run IvritCode Program” to see the steps here.
             <section class="mini-panel">
               <h3 class="mini-title">Letters &amp; niqqud in this demo</h3>
               <p class="mini-body">
-                The VM already knows all <strong>22 letters</strong> as
-                operators, plus <strong>A</strong> as the Aleph-Olam register.
+                The VM underneath already knows all
+                <strong>22 letters</strong> as operators, plus
+                <strong>A</strong> as the Aleph-Olam register.
               </p>
               <p class="mini-body">
-                In future versions you’ll also see <strong>niqqud</strong>:
-                sheva (ְ) as a “pure/query” mode that writes into A, and hiriq
-                (ִ) as an “immediate” mode that adds literal constants into the
-                mix.
+                In future versions, you’ll also see
+                <strong>niqqud</strong>:
+                sheva (ְ) as a “pure/query” mode writing into A, and hiriq (ִ) as
+                an “immediate” mode that adds literal constants into the mix.
               </p>
             </section>
           </article>
         </section>
 
-        <!-- Bottom row -->
+        <!-- Bottom row: curiosity + letter reference -->
         <section class="layout-row layout-row-bottom">
           <article class="panel panel-bottom">
             <h2 class="panel-title">If you’re just curious</h2>
@@ -211,8 +241,126 @@ Press “Run IvritCode Program” to see the steps here.
             </p>
 
             <div class="letter-grid">
-              <!-- same rows as before, omitted here for brevity -->
-              <!-- You can keep the full list we already wrote; it matches vm.ts -->
+              <div class="letter-row">
+                <span class="letter-symbol">א</span>
+                <span class="letter-text">Identity / no-op (state unchanged).</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">ב</span>
+                <span class="letter-text">Addition: ג = א + ב.</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">ג</span>
+                <span class="letter-text">Multiplication: ד = א × ב.</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">ד</span>
+                <span class="letter-text">
+                  Differences: ג = ב − א, ד = א − ב.
+                </span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">ה</span>
+                <span class="letter-text">Sign of Alef: ה = sign(א).</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">ו</span>
+                <span class="letter-text">Swap: א ↔ ב.</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">ז</span>
+                <span class="letter-text">Increment: א = א + 1.</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">ח</span>
+                <span class="letter-text">Decrement: א = א − 1.</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">ט</span>
+                <span class="letter-text">Square: ג = א².</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">י</span>
+                <span class="letter-text">Load from A: א = A.</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">כ</span>
+                <span class="letter-text">Quartet sum: A = א + ב + ג + ד.</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">ל</span>
+                <span class="letter-text">
+                  Global sum: A = Σ(א–ת), the sum of all 22 Hebrew registers.
+                </span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">מ</span>
+                <span class="letter-text">
+                  Mean: ג = ⌊(א + ב + ג + ד) / 4⌋.
+                </span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">נ</span>
+                <span class="letter-text">Negate: א = −א.</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">ס</span>
+                <span class="letter-text">
+                  Rotate א–ת cyclically (א gets old ת, etc.).
+                </span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">ע</span>
+                <span class="letter-text">
+                  Dot product of halves (א–כ with ל–ת) → A.
+                </span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">פ</span>
+                <span class="letter-text">Expose Alef: A = א.</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">צ</span>
+                <span class="letter-text">Compare: A = sign(א − ב).</span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">ק</span>
+                <span class="letter-text">
+                  Mirror: reverse the values of א–ת.
+                </span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">ר</span>
+                <span class="letter-text">
+                  Reseed: (א, ב, ג, ד) = (A, A+1, A+2, A+3).
+                </span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">ש</span>
+                <span class="letter-text">
+                  Non-linear mix over the quartet with squares.
+                </span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">ת</span>
+                <span class="letter-text">
+                  Quartet rotation: (א, ב, ג, ד) → (ג, ד, א, ב).
+                </span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">A</span>
+                <span class="letter-text">
+                  Aleph-Olam: hidden 23rd register used as a global scratch /
+                  summary cell.
+                </span>
+              </div>
+              <div class="letter-row">
+                <span class="letter-symbol">סבב</span>
+                <span class="letter-text">
+                  Composite round: deep nonlinear mix on the quartet (used in
+                  the default demo program).
+                </span>
+              </div>
             </div>
           </article>
         </section>
@@ -225,6 +373,7 @@ Press “Run IvritCode Program” to see the steps here.
       </footer>
     </div>
 
+    <!-- Browser-side demo VM -->
     <script src="./main.js"></script>
   </body>
 </html>
