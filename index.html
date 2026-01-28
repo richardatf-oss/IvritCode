@@ -1,379 +1,347 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>IvritCode · Alpha Concept Demo</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta
-      name="description"
-      content="IvritCode – Hebrew letters as opcodes, niqqud as modifiers. A tiny virtual machine exploring a sacred machine language."
-    />
+<head>
+  <meta charset="UTF-8" />
+  <title>IvritCode v0.0 — Aleph-Olam VM</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #050816;
+      color: #f9fafb;
+      --accent: #fbbf24;
+      --accent-soft: #4b5563;
+      --panel: #0b1120;
+      --border: #1f2937;
+    }
 
-    <!-- Your existing styling -->
-    <link rel="stylesheet" href="./styles.css" />
-  </head>
-  <body>
-    <div class="page-shell">
-      <header class="topbar">
-        <div class="topbar-left">
-          <span class="logo-word">
-            IVRIT<span class="logo-accent">CODE</span>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 1.25rem 1.5rem 0.5rem;
+      border-bottom: 1px solid var(--border);
+      background: radial-gradient(circle at 0% 0%, #1d2538, #050816 55%);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      letter-spacing: 0.04em;
+    }
+
+    header h1 span {
+      color: var(--accent);
+    }
+
+    header p {
+      margin: 0.4rem 0 0.75rem;
+      font-size: 0.9rem;
+      color: #d1d5db;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      padding: 1rem 1.5rem 1.5rem;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+      gap: 1rem;
+    }
+
+    @media (max-width: 840px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: radial-gradient(circle at 100% 0%, #111827, #020617 60%);
+      border-radius: 1rem;
+      border: 1px solid var(--border);
+      padding: 1rem;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .card-header h2 {
+      font-size: 1rem;
+      margin: 0;
+    }
+
+    .card-header span {
+      font-size: 0.8rem;
+      color: #9ca3af;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 8rem;
+      resize: vertical;
+      padding: 0.75rem 0.85rem;
+      border-radius: 0.75rem;
+      border: 1px solid var(--border);
+      background: #020617;
+      color: #f9fafb;
+      font-family: "Courier New", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 1.05rem;
+      line-height: 1.4;
+      direction: rtl;
+    }
+
+    textarea::placeholder {
+      color: #6b7280;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+      justify-content: space-between;
+    }
+
+    .left-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 0.5rem 1.1rem;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      background: linear-gradient(135deg, var(--accent), #f97316);
+      color: #111827;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      box-shadow: 0 10px 30px rgba(251, 191, 36, 0.4);
+    }
+
+    button:active {
+      transform: translateY(1px);
+      box-shadow: 0 4px 16px rgba(251, 191, 36, 0.3);
+    }
+
+    .pill {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.65rem;
+      border-radius: 999px;
+      border: 1px solid var(--accent-soft);
+      color: #e5e7eb;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .pill code {
+      font-size: 0.75rem;
+    }
+
+    .mini-note {
+      font-size: 0.75rem;
+      color: #9ca3af;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.87rem;
+    }
+
+    th, td {
+      border-bottom: 1px solid #111827;
+      padding: 0.35rem 0.25rem;
+      text-align: right;
+    }
+
+    th {
+      color: #9ca3af;
+      font-weight: 500;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .reg-name {
+      font-family: "SBL Hebrew", "Times New Roman", serif;
+      font-size: 1.1rem;
+    }
+
+    .reg-name.global {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .value-cell {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    .status {
+      margin-top: 0.5rem;
+      font-size: 0.8rem;
+      color: #9ca3af;
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .status span strong {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .legend {
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px dashed #1f2937;
+      font-size: 0.8rem;
+      color: #9ca3af;
+    }
+
+    .legend dl {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      column-gap: 0.5rem;
+      row-gap: 0.2rem;
+      margin: 0.35rem 0 0;
+    }
+
+    .legend dt {
+      font-family: "SBL Hebrew", "Times New Roman", serif;
+      font-size: 1rem;
+      color: #e5e7eb;
+    }
+
+    .legend dd {
+      margin: 0;
+    }
+
+    footer {
+      padding: 0.5rem 1.5rem 1rem;
+      font-size: 0.75rem;
+      color: #6b7280;
+      border-top: 1px solid #020617;
+      background: #020617;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>IvritCode <span>v0.0</span> — Aleph-Olam VM</h1>
+    <p>
+      Hebrew letters (א–ת) as opcodes, one global register <code>A</code> (Aleph-Olam),
+      and a working quartet (א, ב, ג, ד). Type a short “word” of letters and run.
+    </p>
+  </header>
+
+  <main>
+    <section class="layout">
+      <!-- PROGRAM SIDE -->
+      <section class="card">
+        <div class="card-header">
+          <h2>Program</h2>
+          <span>Use only Hebrew letters א–ת. Other characters are ignored (for now, Niqqud = no-ops).</span>
+        </div>
+
+        <textarea
+          id="program"
+          placeholder="Example: אבבגת
+
+• א — no-op
+• ב — add Alef+Bet → Gimel
+• ג — multiply Alef⋅Bet → Dalet
+• ת — rotate (א,ב,ג,ד)"
+        ></textarea>
+
+        <div class="controls">
+          <div class="left-controls">
+            <button id="runBtn" type="button">
+              ▶ Run IvritCode
+            </button>
+            <span class="pill">
+              Initial state:
+              <code>all 0</code>
+            </span>
+          </div>
+          <span class="mini-note">
+            Tip: You can edit registers manually in the code later; for now the VM starts with zeros.
           </span>
-          <span class="topbar-tag">ALPHA · CONCEPT DEMO</span>
         </div>
-        <div class="topbar-right">
-          <a
-            href="https://github.com/richardatf-oss/IvritCode"
-            class="topbar-link"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            View on GitHub
-          </a>
+
+        <div class="legend">
+          <strong>Working quartet</strong>
+          <dl>
+            <dt>א</dt><dd>primary input</dd>
+            <dt>ב</dt><dd>secondary input</dd>
+            <dt>ג</dt><dd>derived value</dd>
+            <dt>ד</dt><dd>derived value</dd>
+          </dl>
         </div>
-      </header>
+      </section>
 
-      <main class="layout-main">
-        <!-- Top row: explanation + demo -->
-        <section class="layout-row">
-          <!-- Left: explanation -->
-          <article class="panel panel-left">
-            <h1 class="panel-title">What’s happening on this page?</h1>
+      <!-- STATE / REGISTERS SIDE -->
+      <section class="card">
+        <div class="card-header">
+          <h2>Registers</h2>
+          <span>Final machine state after running the program.</span>
+        </div>
 
-            <p class="panel-body">
-              You’re looking at a tiny virtual machine built out of Hebrew
-              letters. Under the hood there are <strong>23 registers</strong>:
-              <strong>א–ת</strong> plus <strong>A</strong>, the hidden
-              <em>Aleph-Olam</em> register.
-            </p>
+        <div style="max-height: 18rem; overflow: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Register</th>
+                <th>Index</th>
+                <th>Value</th>
+              </tr>
+            </thead>
+            <tbody id="registersBody">
+              <!-- filled by main.js -->
+            </tbody>
+          </table>
+        </div>
 
-            <p class="panel-body">
-              In this demo, you choose four starting numbers. The machine loads
-              them into registers <strong>א, ב, ג, ד</strong>, then runs an
-              IvritCode program that you specify as a sequence of letters.
-            </p>
+        <div class="status">
+          <span>Steps executed: <strong id="stepsCount">0</strong></span>
+          <span>Last program: <code id="lastProgram" dir="rtl"></code></span>
+        </div>
+      </section>
+    </section>
+  </main>
 
-            <div class="demo-program">
-              <div class="demo-label">
-                Example program — the letters that run on your numbers:
-              </div>
-              <div class="demo-sequence">
-                <span>א</span>
-                <span>→</span>
-                <span>ב</span>
-                <span>→</span>
-                <span>ג</span>
-                <span>→</span>
-                <span>ת</span>
-                <span>→</span>
-                <span>סבב</span>
-              </div>
-            </div>
+  <footer>
+    IvritCode v0.0 — base instruction set only (Niqqud reserved for future modifiers). Specification in
+    <code>SPEC.md</code>.
+  </footer>
 
-            <ul class="panel-list">
-              <li><strong>א</strong> quietly locks in this run (identity step).</li>
-              <li><strong>ב</strong> adds your first two numbers (ג = א + ב).</li>
-              <li><strong>ג</strong> multiplies them (ד = א × ב).</li>
-              <li>
-                <strong>ת</strong> rotates the quartet (א, ב, ג, ד → ג, ד, א, ב).
-              </li>
-              <li>
-                <strong>סבב</strong> performs a deeper cryptographic-style mix on
-                the quartet.
-              </li>
-            </ul>
-
-            <p class="panel-body">
-              Everything happens in your browser: no network calls, no signup,
-              no wallet — just letters and numbers dancing for a moment.
-            </p>
-
-            <div class="chip-row">
-              <span class="chip chip-muted">NO SIGNUP</span>
-              <span class="chip chip-muted">NO WALLET</span>
-              <span class="chip chip-primary">JUST LETTERS &amp; MATH</span>
-            </div>
-          </article>
-
-          <!-- Right: interactive runner -->
-          <article class="panel panel-right">
-            <h2 class="panel-title">Try it: let the letters run</h2>
-
-            <p class="panel-body">
-              Choose four starting numbers. Then enter a sequence of Hebrew
-              letters (and the composite <strong>סבב</strong>) to use as the
-              program.
-            </p>
-
-            <ol class="panel-steps">
-              <li>Type any whole numbers into the R0–R3 boxes.</li>
-              <li>
-                Enter your program as letters, e.g.
-                <code>א ב ג ת סבב</code> or
-                <code>א→ב→ג→ת→סבב</code>.
-              </li>
-              <li>Click <strong>Run IvritCode Program</strong>.</li>
-              <li>
-                Open the trace panel and scroll through what each instruction
-                did.
-              </li>
-            </ol>
-
-            <form class="register-form" onsubmit="return false;">
-              <div class="register-row">
-                <label class="register-label" for="r0">
-                  R0 (first number) → א
-                </label>
-                <input
-                  id="r0"
-                  type="number"
-                  inputmode="numeric"
-                  class="register-input"
-                  value="1"
-                />
-              </div>
-
-              <div class="register-row">
-                <label class="register-label" for="r1">
-                  R1 (second number) → ב
-                </label>
-                <input
-                  id="r1"
-                  type="number"
-                  inputmode="numeric"
-                  class="register-input"
-                  value="2"
-                />
-              </div>
-
-              <div class="register-row">
-                <label class="register-label" for="r2">R2 → ג</label>
-                <input
-                  id="r2"
-                  type="number"
-                  inputmode="numeric"
-                  class="register-input"
-                  value="3"
-                />
-              </div>
-
-              <div class="register-row">
-                <label class="register-label" for="r3">R3 → ד</label>
-                <input
-                  id="r3"
-                  type="number"
-                  inputmode="numeric"
-                  class="register-input"
-                  value="4"
-                />
-              </div>
-
-              <div class="register-row">
-                <label class="register-label" for="program-input">
-                  Program (letters, left → right)
-                </label>
-                <input
-                  id="program-input"
-                  type="text"
-                  class="register-input"
-                  value="א→ב→ג→ת→סבב"
-                />
-                <small class="program-hint">
-                  You can separate with spaces or arrows. Examples:
-                  <code>א ב ג ת סבב</code> or <code>א→ב→ג→ת→סבב</code>.
-                </small>
-              </div>
-
-              <button type="button" id="run-btn" class="primary-button">
-                Run IvritCode Program
-              </button>
-            </form>
-
-            <details class="trace-details" open>
-              <summary class="trace-summary">
-                Show raw execution trace
-              </summary>
-              <pre class="trace-output" id="trace-output">
-Press “Run IvritCode Program” to see the steps here.
-              </pre>
-            </details>
-
-            <section class="mini-panel">
-              <h3 class="mini-title">Letters &amp; niqqud in this demo</h3>
-              <p class="mini-body">
-                The VM underneath already knows all
-                <strong>22 letters</strong> as operators, plus
-                <strong>A</strong> as the Aleph-Olam register.
-              </p>
-              <p class="mini-body">
-                In future versions, you’ll also see
-                <strong>niqqud</strong>:
-                sheva (ְ) as a “pure/query” mode writing into A, and hiriq (ִ) as
-                an “immediate” mode that adds literal constants into the mix.
-              </p>
-            </section>
-          </article>
-        </section>
-
-        <!-- Bottom row: curiosity + letter reference -->
-        <section class="layout-row layout-row-bottom">
-          <article class="panel panel-bottom">
-            <h2 class="panel-title">If you’re just curious</h2>
-            <p class="panel-body">
-              At a simple level, IvritCode is a way of asking:
-            </p>
-            <ul class="panel-list">
-              <li>What if the Aleph-Bet itself was a tiny computer?</li>
-              <li>What if a story could also be a set of instructions?</li>
-              <li>What happens when letters push numbers around?</li>
-            </ul>
-            <p class="panel-body">
-              This page doesn’t try to prove anything. It just lets you play on
-              the border between <em>symbol</em>, <em>story</em>, and
-              <em>machine</em>.
-            </p>
-          </article>
-
-          <article class="panel panel-bottom">
-            <h2 class="panel-title">Letter reference (א–ת + A)</h2>
-            <p class="panel-body">
-              Base (unmodified) semantics of each letter in the current VM.
-            </p>
-
-            <div class="letter-grid">
-              <div class="letter-row">
-                <span class="letter-symbol">א</span>
-                <span class="letter-text">Identity / no-op (state unchanged).</span>
-              </div>
-              <div class="letter-row">
-                <span class="letter-symbol">ב</span>
-                <span class="letter-text">Addition: ג = א + ב.</span>
-              </div>
-              <div class="letter-row">
-                <span class="letter-symbol">ג</span>
-                <span class="letter-text">Multiplication: ד = א × ב.</span>
-              </div>
-              <div class="letter-row">
-                <span class="letter-symbol">ד</span>
-                <span class="letter-text">
-                  Differences: ג = ב − א, ד = א − ב.
-                </span>
-              </div>
-              <div class="letter-row">
-                <span class="letter-symbol">ה</span>
-                <span class="letter-text">Sign of Alef: ה = sign(א).</span>
-              </div>
-              <div class="letter-row">
-                <span class="letter-symbol">ו</span>
-                <span class="letter-text">Swap: א ↔ ב.</span>
-              </div>
-              <div class="letter-row">
-                <span class="letter-symbol">ז</span>
-                <span class="letter-text">Increment: א = א + 1.</span>
-              </div>
-              <div class="letter-row">
-                <span class="letter-symbol">ח</span>
-                <span class="letter-text">Decrement: א = א − 1.</span>
-              </div>
-              <div class="letter-row">
-                <span class="letter-symbol">ט</span>
-                <span class="letter-text">Square: ג = א².</span>
-              </div>
-              <div class="letter-row">
-                <span class="letter-symbol">י</span>
-                <span class="letter-text">Load from A: א = A.</span>
-              </div>
-              <div class="letter-row">
-                <span class="letter-symbol">כ</span>
-                <span class="letter-text">Quartet sum: A = א + ב + ג + ד.</span>
-              </div>
-              <div class="letter-row">
-                <span class="letter-symbol">ל</span>
-                <span class="letter-text">
-                  Global sum: A = Σ(א–ת), the sum of all 22 Hebrew registers.
-                </span>
-              </div>
-              <div class="letter-row">
-                <span class="letter-symbol">מ</span>
-                <span class="letter-text">
-                  Mean: ג = ⌊(א + ב + ג + ד) / 4⌋.
-                </span>
-              </div>
-              <div class="letter-row">
-                <span class="letter-symbol">נ</span>
-                <span class="letter-text">Negate: א = −א.</span>
-              </div>
-              <div class="letter-row">
-                <span class="letter-symbol">ס</span>
-                <span class="letter-text">
-                  Rotate א–ת cyclically (א gets old ת, etc.).
-                </span>
-              </div>
-              <div class="letter-row">
-                <span class="letter-symbol">ע</span>
-                <span class="letter-text">
-                  Dot product of halves (א–כ with ל–ת) → A.
-                </span>
-              </div>
-              <div class="letter-row">
-                <span class="letter-symbol">פ</span>
-                <span class="letter-text">Expose Alef: A = א.</span>
-              </div>
-              <div class="letter-row">
-                <span class="letter-symbol">צ</span>
-                <span class="letter-text">Compare: A = sign(א − ב).</span>
-              </div>
-              <div class="letter-row">
-                <span class="letter-symbol">ק</span>
-                <span class="letter-text">
-                  Mirror: reverse the values of א–ת.
-                </span>
-              </div>
-              <div class="letter-row">
-                <span class="letter-symbol">ר</span>
-                <span class="letter-text">
-                  Reseed: (א, ב, ג, ד) = (A, A+1, A+2, A+3).
-                </span>
-              </div>
-              <div class="letter-row">
-                <span class="letter-symbol">ש</span>
-                <span class="letter-text">
-                  Non-linear mix over the quartet with squares.
-                </span>
-              </div>
-              <div class="letter-row">
-                <span class="letter-symbol">ת</span>
-                <span class="letter-text">
-                  Quartet rotation: (א, ב, ג, ד) → (ג, ד, א, ב).
-                </span>
-              </div>
-              <div class="letter-row">
-                <span class="letter-symbol">A</span>
-                <span class="letter-text">
-                  Aleph-Olam: hidden 23rd register used as a global scratch /
-                  summary cell.
-                </span>
-              </div>
-              <div class="letter-row">
-                <span class="letter-symbol">סבב</span>
-                <span class="letter-text">
-                  Composite round: deep nonlinear mix on the quartet (used in
-                  the default demo program).
-                </span>
-              </div>
-            </div>
-          </article>
-        </section>
-      </main>
-
-      <footer class="site-footer">
-        <span class="footer-text">
-          IvritCode · A small glimpse of a larger dream.
-        </span>
-      </footer>
-    </div>
-
-    <!-- Browser-side demo VM -->
-    <script src="./main.js"></script>
-  </body>
+  <!-- NOTE:
+       This expects a compiled main.js which imports from vm.js.
+       After compiling TypeScript, ensure main.js/vm.js are in the same folder as this file. -->
+  <script type="module" src="./main.js"></script>
+</body>
 </html>
