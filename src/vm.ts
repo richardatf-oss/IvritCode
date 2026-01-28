@@ -1,529 +1,299 @@
-// ivritcode_vm.ts
-// IvritCode v0.1 unified VM: letters + niqqud
-//
-// - State: 23 registers (א–ת + A for Aleph-Olam)
-// - Base ops: all Hebrew letters + composite "סבב"
-// - Niqqud:
-//     - none  : default letter semantics
-//     - sheva : pure/query mode (effect compressed into A)
-//     - hiriq : immediate-argument mode for selected letters
-//
-// This is a reference implementation, not a crypto primitive.
-//
-// ------------------------------------------------------------
-// Types & constants
-// ------------------------------------------------------------
+// vm.ts
+// IvritCode v0.0 — core VM implementing the base letter semantics (no Niqqud yet).
 
-export type HebrewLetter =
-  | "א" | "ב" | "ג" | "ד" | "ה" | "ו" | "ז" | "ח" | "ט" | "י" | "כ" | "ל"
-  | "מ" | "נ" | "ס" | "ע" | "פ" | "צ" | "ק" | "ר" | "ש" | "ת";
+export const HEBREW_LETTERS = "אבגדהוזחטיכלמנסעפצקרשת" as const;
+export const NUM_HEBREW_REGS = 22;
+export const AO_INDEX = 22; // Aleph-Olam register index (global)
 
-export type AlephOlamName = "A";
+// Register indices for the working quartet
+const ALEF = 0;
+const BET = 1;
+const GIMEL = 2;
+const DALET = 3;
 
-export type LetterOp = HebrewLetter | "סבב"; // include composite Sovav
+export interface IvritState {
+  /** Registers r0..r21 = א..ת, r22 = A (Aleph-Olam) */
+  regs: number[]; // length 23
+}
 
-export type RegisterName = HebrewLetter | AlephOlamName;
-
-// 23 registers: 0–21 = א–ת, 22 = A (Aleph-Olam)
-export const REGISTER_ORDER: RegisterName[] = [
-  "א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט", "י", "כ", "ל",
-  "מ", "נ", "ס", "ע", "פ", "צ", "ק", "ר", "ש", "ת",
+/** Mapping from register index to its “name” (א..ת, A). */
+export const REGISTER_NAMES: string[] = [
+  ...HEBREW_LETTERS.split(""),
   "A",
 ];
 
-export const REG_INDEX: Record<RegisterName, number> = Object.fromEntries(
-  REGISTER_ORDER.map((name, idx) => [name, idx]),
-) as Record<RegisterName, number>;
+/** Create a fresh state, optionally seeding specific registers by name or index. */
+export function createState(seed?: {
+  byIndex?: Partial<Record<number, number>>;
+  byName?: Partial<Record<string, number>>;
+}): IvritState {
+  const regs = new Array<number>(NUM_HEBREW_REGS + 1).fill(0);
 
-// Working quartet and Aleph-Olam aliases
-const RA  = REG_INDEX["א"];
-const RB  = REG_INDEX["ב"];
-const RG  = REG_INDEX["ג"];
-const RD  = REG_INDEX["ד"];
-const RAO = REG_INDEX["A"]; // Aleph-Olam
+  if (seed?.byIndex) {
+    for (const [k, v] of Object.entries(seed.byIndex)) {
+      const idx = Number(k);
+      if (Number.isInteger(idx) && idx >= 0 && idx < regs.length) {
+        regs[idx] = v!;
+      }
+    }
+  }
 
-export type State = number[]; // must be length 23
+  if (seed?.byName) {
+    for (const [name, v] of Object.entries(seed.byName)) {
+      if (name === "A") {
+        regs[AO_INDEX] = v!;
+        continue;
+      }
+      const idx = letterToIndex(name);
+      if (idx !== null) {
+        regs[idx] = v!;
+      }
+    }
+  }
 
-// Niqqud modes
-export type Niqqud = "none" | "sheva" | "hiriq";
-
-// A full instruction = letter + optional niqqud + optional immediate
-export interface Instr {
-  letter: LetterOp;
-  niqqud?: Niqqud;     // default "none"
-  immediate?: number;  // for hiriq (ִ) variants
+  return { regs };
 }
 
-// For tracing
-export interface TraceStep {
-  index: number;
-  instr: Instr;
-  before: State;
-  after: State;
+/** Shallow clone of state (we clone the register array). */
+export function cloneState(state: IvritState): IvritState {
+  return { regs: state.regs.slice() };
 }
 
-// ------------------------------------------------------------
-// Helpers
-// ------------------------------------------------------------
-
-export function createZeroState(): State {
-  return new Array(REGISTER_ORDER.length).fill(0);
+/** Convert a single Hebrew letter to its register/index (א..ת → 0..21). */
+export function letterToIndex(ch: string): number | null {
+  const idx = HEBREW_LETTERS.indexOf(ch);
+  return idx === -1 ? null : idx;
 }
 
-export function cloneState(state: State): State {
-  return state.slice();
-}
-
-function signOf(x: number): number {
+/** Sign function used for ה and צ. */
+function sign(x: number): number {
   if (x > 0) return 1;
   if (x < 0) return -1;
   return 0;
 }
 
-// Pretty-print state (for console / debugging)
-export function formatState(state: State): string {
-  return REGISTER_ORDER
-    .map((name, idx) => `${name}=${state[idx]}`)
-    .join("  ");
-}
+/** Apply one instruction (single Hebrew letter) to a state, returning the next state. */
+export function step(state: IvritState, op: string): IvritState {
+  const r = state.regs;
+  const next = r.slice(); // compute updates “simultaneously”
 
-// ------------------------------------------------------------
-// Base letter semantics (no niqqud)
-// ------------------------------------------------------------
-//
-// All functions below implement the SPEC.md v0.0 core behavior.
-//
+  const a = r[ALEF];
+  const b = r[BET];
+  const g = r[GIMEL];
+  const d = r[DALET];
+  const AO = r[AO_INDEX];
 
-export function applyLetter(state: State, letter: LetterOp): State {
-  switch (letter) {
-    case "א": return opAlef(state);
-    case "ב": return opBet(state);
-    case "ג": return opGimel(state);
-    case "ד": return opDalet(state);
-    case "ה": return opHei(state);
-    case "ו": return opVav(state);
-    case "ז": return opZayin(state);
-    case "ח": return opChet(state);
-    case "ט": return opTet(state);
-    case "י": return opYod(state);
-    case "כ": return opKaf(state);
-    case "ל": return opLamed(state);
-    case "מ": return opMem(state);
-    case "נ": return opNun(state);
-    case "ס": return opSamekh(state);
-    case "ע": return opAyin(state);
-    case "פ": return opPe(state);
-    case "צ": return opTsadi(state);
-    case "ק": return opQof(state);
-    case "ר": return opResh(state);
-    case "ש": return opShin(state);
-    case "ת": return opTav(state);
-    case "סבב": return opSovav(state); // composite round
-    default:
-      throw new Error(`Unknown letter op: ${letter}`);
-  }
-}
+  switch (op) {
+    case "א":
+      // Alef — Identity (no-op)
+      // δא(S) = S
+      return state;
 
-// א — Alef: identity / no-op
-function opAlef(state: State): State {
-  return cloneState(state);
-}
-
-// ב — Bet: g = a + b
-function opBet(state: State): State {
-  const next = cloneState(state);
-  const a = state[RA];
-  const b = state[RB];
-  next[RG] = a + b;
-  return next;
-}
-
-function opGimel(state: State): State {
-  const next = cloneState(state);
-  const a = state[RA];
-  const b = state[RB];
-  next[RD] = a * b;
-  return next;
-}
-
-// ד — Dalet: g = b - a, d = a - b
-function opDalet(state: State): State {
-  const next = cloneState(state);
-  const a = state[RA];
-  const b = state[RB];
-  next[RG] = b - a;
-  next[RD] = a - b;
-  return next;
-}
-
-// ה — Hei: h = sign(a)
-function opHei(state: State): State {
-  const next = cloneState(state);
-  const a = state[RA];
-  const idxH = REG_INDEX["ה"];
-  next[idxH] = signOf(a);
-  return next;
-}
-
-// ו — Vav: swap a <-> b
-function opVav(state: State): State {
-  const next = cloneState(state);
-  const a = state[RA];
-  const b = state[RB];
-  next[RA] = b;
-  next[RB] = a;
-  return next;
-}
-
-// ז — Zayin: a = a + 1
-function opZayin(state: State): State {
-  const next = cloneState(state);
-  next[RA] = state[RA] + 1;
-  return next;
-}
-
-// ח — Chet: a = a - 1
-function opChet(state: State): State {
-  const next = cloneState(state);
-  next[RA] = state[RA] - 1;
-  return next;
-}
-
-// ט — Tet: g = a^2
-function opTet(state: State): State {
-  const next = cloneState(state);
-  const a = state[RA];
-  next[RG] = a * a;
-  return next;
-}
-
-// י — Yod: a = AO
-function opYod(state: State): State {
-  const next = cloneState(state);
-  const AO = state[RAO];
-  next[RA] = AO;
-  return next;
-}
-
-// כ — Kaf: AO = a + b + g + d
-function opKaf(state: State): State {
-  const next = cloneState(state);
-  const a = state[RA];
-  const b = state[RB];
-  const g = state[RG];
-  const d = state[RD];
-  next[RAO] = a + b + g + d;
-  return next;
-}
-
-// ל — Lamed: AO = sum(all 22 Hebrew registers)
-function opLamed(state: State): State {
-  const next = cloneState(state);
-  let sum = 0;
-  for (let i = 0; i < 22; i++) {
-    sum += state[i];
-  }
-  next[RAO] = sum;
-  return next;
-}
-
-// מ — Mem: g = floor((a + b + g + d)/4)
-function opMem(state: State): State {
-  const next = cloneState(state);
-  const a = state[RA];
-  const b = state[RB];
-  const g = state[RG];
-  const d = state[RD];
-  const mean = Math.trunc((a + b + g + d) / 4);
-  next[RG] = mean;
-  return next;
-}
-
-// נ — Nun: a = -a
-function opNun(state: State): State {
-  const next = cloneState(state);
-  next[RA] = -state[RA];
-  return next;
-}
-
-// ס — Samekh: rotate all 22 Hebrew registers (cyclic)
-function opSamekh(state: State): State {
-  const next = cloneState(state);
-  for (let i = 0; i < 22; i++) {
-    const src = (i - 1 + 22) % 22;
-    next[i] = state[src];
-  }
-  // Aleph-Olam unchanged
-  return next;
-}
-
-// ע — Ayin: dot product of first and second halves into AO
-function opAyin(state: State): State {
-  const next = cloneState(state);
-  let acc = 0;
-  // first half: 0–10 (א–כ), second half: 11–21 (ל–ת)
-  for (let i = 0; i <= 10; i++) {
-    const u = state[i];
-    const v = state[i + 11];
-    acc += u * v;
-  }
-  next[RAO] = acc;
-  return next;
-}
-
-// פ — Pe: AO = a
-function opPe(state: State): State {
-  const next = cloneState(state);
-  next[RAO] = state[RA];
-  return next;
-}
-
-// צ — Tsadi: AO = sign(a - b)
-function opTsadi(state: State): State {
-  const next = cloneState(state);
-  const a = state[RA];
-  const b = state[RB];
-  next[RAO] = signOf(a - b);
-  return next;
-}
-
-// ק — Qof: reverse the 22 Hebrew registers
-function opQof(state: State): State {
-  const next = cloneState(state);
-  for (let i = 0; i < 22; i++) {
-    const mirror = 21 - i;
-    next[i] = state[mirror];
-  }
-  // Aleph-Olam unchanged
-  return next;
-}
-
-// ר — Resh: reseed quartet from AO
-function opResh(state: State): State {
-  const next = cloneState(state);
-  const AO = state[RAO];
-  next[RA] = AO;
-  next[RB] = AO + 1;
-  next[RG] = AO + 2;
-  next[RD] = AO + 3;
-  return next;
-}
-
-// ש — Shin: nonlinear mix of quartet
-function opShin(state: State): State {
-  const next = cloneState(state);
-  const a = state[RA];
-  const b = state[RB];
-  const g = state[RG];
-  const d = state[RD];
-  next[RA] = a * a + b;
-  next[RB] = b * b + g;
-  next[RG] = g * g + d;
-  next[RD] = d * d + a;
-  return next;
-}
-
-// ת — Tav: rotate quartet (a,b,g,d) -> (g,d,a,b)
-function opTav(state: State): State {
-  const next = cloneState(state);
-  const a = state[RA];
-  const b = state[RB];
-  const g = state[RG];
-  const d = state[RD];
-  next[RA] = g;
-  next[RB] = d;
-  next[RG] = a;
-  next[RD] = b;
-  return next;
-}
-
-// סבב — Sovav: deep mix round on quartet
-function opSovav(state: State): State {
-  const next = cloneState(state);
-  const a = state[RA];
-  const b = state[RB];
-  const g = state[RG];
-  const d = state[RD];
-
-  const M0 = a + 3 * g;
-  const M1 = b + 5 * d;
-
-  const N0 = M0 + M1;
-  const N1 = M0 - M1;
-  const N2 = 3 * M0 - M1;
-  const N3 = 2 * M1 + a;
-
-  next[RA] = N0;
-  next[RB] = N1;
-  next[RG] = N2;
-  next[RD] = N3;
-
-  return next;
-}
-
-// ------------------------------------------------------------
-// Niqqud-aware layer
-// ------------------------------------------------------------
-//
-// Niqqud modes:
-//   - none  : base semantics
-//   - sheva : pure/query mode (write effect summary into A)
-//   - hiriq : immediate-aware variants for selected letters
-//
-
-export function applyInstr(state: State, instr: Instr): State {
-  const mode: Niqqud = instr.niqqud ?? "none";
-
-  switch (mode) {
-    case "none":
-      return applyLetter(state, instr.letter);
-
-    case "sheva":
-      return applySheva(state, instr.letter);
-
-    case "hiriq":
-      return applyHiriq(state, instr);
-
-    default:
-      throw new Error(`Unknown niqqud mode: ${mode}`);
-  }
-}
-
-// sheva ְ — pure/query mode
-//
-// Semantics v0.1:
-// - Let virtualNext = applyLetter(state, letter)
-// - Compute deltaSum = Σ (virtualNext[i] - state[i])
-// - Write deltaSum into Aleph-Olam (A)
-// - Leave all other registers unchanged
-//
-function applySheva(state: State, letter: LetterOp): State {
-  const virtualNext = applyLetter(state, letter);
-  let deltaSum = 0;
-
-  for (let i = 0; i < state.length; i++) {
-    deltaSum += virtualNext[i] - state[i];
-  }
-
-  const next = cloneState(state);
-  next[RAO] = deltaSum;
-  return next;
-}
-
-// hiriq ִ — immediate mode
-//
-// For v0.1 we define hiriq for:
-//   בִ  k : g = a + b + k
-//   גִ  k : d = a * b + k
-//   תִ  k : rotate quartet, then add k to a,b,g,d
-//   סבבִ k: Sovav with M0 and M1 offset by k
-//
-// All other letters with hiriq fall back to base semantics.
-//
-function applyHiriq(state: State, instr: Instr): State {
-  const k = instr.immediate ?? 0;
-
-  switch (instr.letter) {
     case "ב":
-      return opBetHiriq(state, k);
+      // Bet — Addition: g' = a + b
+      next[GIMEL] = a + b;
+      break;
+
     case "ג":
-      return opGimelHiriq(state, k);
+      // Gimel — Multiplication: d' = a ⋅ b
+      next[DALET] = a * b;
+      break;
+
+    case "ד":
+      // Dalet — Difference Pair:
+      // g' = b − a ; d' = a − b
+      next[GIMEL] = b - a;
+      next[DALET] = a - b;
+      break;
+
+    case "ה":
+      // Hei — Sign of Alef: h' = sign(a)
+      // h is the register named ה
+      {
+        const HEI = letterToIndex("ה")!;
+        next[HEI] = sign(a);
+      }
+      break;
+
+    case "ו":
+      // Vav — Swap: (a', b') = (b, a)
+      next[ALEF] = b;
+      next[BET] = a;
+      break;
+
+    case "ז":
+      // Zayin — Increment Alef: a' = a + 1
+      next[ALEF] = a + 1;
+      break;
+
+    case "ח":
+      // Chet — Decrement Alef: a' = a - 1
+      next[ALEF] = a - 1;
+      break;
+
+    case "ט":
+      // Tet — Square: g' = a^2
+      next[GIMEL] = a * a;
+      break;
+
+    case "י":
+      // Yod — Load from Aleph-Olam: a' = AO
+      next[ALEF] = AO;
+      break;
+
+    case "כ":
+      // Kaf — Quartet Sum: AO' = a + b + g + d
+      next[AO_INDEX] = a + b + g + d;
+      break;
+
+    case "ל":
+      // Lamed — Global Sum: AO' = sum of all Hebrew registers (0..21)
+      {
+        let sum = 0;
+        for (let i = 0; i < NUM_HEBREW_REGS; i++) sum += r[i];
+        next[AO_INDEX] = sum;
+      }
+      break;
+
+    case "מ":
+      // Mem — Mean: g' = floor((a + b + g + d)/4)
+      next[GIMEL] = Math.floor((a + b + g + d) / 4);
+      break;
+
+    case "נ":
+      // Nun — Negation: a' = −a
+      next[ALEF] = -a;
+      break;
+
+    case "ס":
+      // Samekh — Cyclic rotation of 22 Hebrew registers, AO unchanged.
+      for (let i = 0; i < NUM_HEBREW_REGS; i++) {
+        const from = (i - 1 + NUM_HEBREW_REGS) % NUM_HEBREW_REGS;
+        next[i] = r[from];
+      }
+      next[AO_INDEX] = AO;
+      break;
+
+    case "ע":
+      // Ayin — Dot product of first and second halves of the alphabet.
+      // u_i = r_i, i=0..10 (א..כ)
+      // v_i = r_{i+11}, i=0..10 (ל..ת)
+      {
+        let sum = 0;
+        for (let i = 0; i <= 10; i++) {
+          const u = r[i];
+          const v = r[i + 11];
+          sum += u * v;
+        }
+        next[AO_INDEX] = sum;
+      }
+      break;
+
+    case "פ":
+      // Pe — Expose Alef: AO' = a
+      next[AO_INDEX] = a;
+      break;
+
+    case "צ":
+      // Tsadi — Comparison:
+      // AO' = 1 if a>b, 0 if a=b, -1 if a<b
+      next[AO_INDEX] = sign(a - b);
+      break;
+
+    case "ק":
+      // Qof — Mirror: r_i' = r_{21−i} for i in 0..21, AO unchanged.
+      for (let i = 0; i < NUM_HEBREW_REGS; i++) {
+        next[i] = r[NUM_HEBREW_REGS - 1 - i];
+      }
+      next[AO_INDEX] = AO;
+      break;
+
+    case "ר":
+      // Resh — Reseed Quartet from Aleph-Olam:
+      // a' = AO, b' = AO+1, g' = AO+2, d' = AO+3
+      next[ALEF] = AO;
+      next[BET] = AO + 1;
+      next[GIMEL] = AO + 2;
+      next[DALET] = AO + 3;
+      break;
+
+    case "ש":
+      // Shin — Nonlinear Mix:
+      // a' = a^2 + b
+      // b' = b^2 + g
+      // g' = g^2 + d
+      // d' = d^2 + a
+      next[ALEF] = a * a + b;
+      next[BET] = b * b + g;
+      next[GIMEL] = g * g + d;
+      next[DALET] = d * d + a;
+      break;
+
     case "ת":
-      return opTavHiriq(state, k);
-    case "סבב":
-      return opSovavHiriq(state, k);
+      // Tav — Quartet Rotation:
+      // (a', b', g', d') = (g, d, a, b)
+      next[ALEF] = g;
+      next[BET] = d;
+      next[GIMEL] = a;
+      next[DALET] = b;
+      break;
+
     default:
-      return applyLetter(state, instr.letter);
+      // Unknown character => ignore (Niqqud, whitespace, comments, etc.)
+      return state;
   }
+
+  return { regs: next };
 }
 
-// בִ — Bet-hiriq: g = a + b + k
-function opBetHiriq(state: State, k: number): State {
-  const next = cloneState(state);
-  const a = state[RA];
-  const b = state[RB];
-  next[RG] = a + b + k;
-  return next;
+export interface RunOptions {
+  trace?: boolean;
+  maxSteps?: number;
 }
 
-// גִ — Gimel-hiriq: d = a * b + k
-function opGimelHiriq(state: State, k: number): State {
-  const next = cloneState(state);
-  const a = state[RA];
-  const b = state[RB];
-  next[RD] = a * b + k;
-  return next;
+export interface RunResult {
+  final: IvritState;
+  trace: IvritState[];
+  steps: number;
+  executedOps: string;
 }
 
-// תִ — Tav-hiriq:
-//   1. Rotate quartet (a,b,g,d) -> (g,d,a,b)
-//   2. Add k to each of a,b,g,d
-function opTavHiriq(state: State, k: number): State {
-  const next = cloneState(state);
-  const a = state[RA];
-  const b = state[RB];
-  const g = state[RG];
-  const d = state[RD];
+/**
+ * Run a whole IvritCode “program” (string of characters).
+ *
+ * Non-letter characters (including Niqqud, whitespace, punctuation)
+ * are ignored in v0. Only base letters א..ת act as instructions.
+ */
+export function runProgram(
+  program: string,
+  opts: RunOptions = {}
+): RunResult {
+  const trace: IvritState[] = [];
+  let state = createState();
+  const maxSteps = opts.maxSteps ?? 10000;
 
-  next[RA] = g + k;
-  next[RB] = d + k;
-  next[RG] = a + k;
-  next[RD] = b + k;
+  let steps = 0;
+  let executedOps = "";
 
-  return next;
-}
+  for (const ch of program) {
+    if (HEBREW_LETTERS.includes(ch)) {
+      if (opts.trace) {
+        trace.push(cloneState(state));
+      }
 
-// סבבִ — Sovav-hiriq:
-//   M0 = a + 3*g + k
-//   M1 = b + 5*d + k
-function opSovavHiriq(state: State, k: number): State {
-  const next = cloneState(state);
-  const a = state[RA];
-  const b = state[RB];
-  const g = state[RG];
-  const d = state[RD];
+      state = step(state, ch);
+      executedOps += ch;
+      steps++;
 
-  const M0 = a + 3 * g + k;
-  const M1 = b + 5 * d + k;
+      if (steps >= maxSteps) {
+        break;
+      }
+    }
+  }
 
-  const N0 = M0 + M1;
-  const N1 = M0 - M1;
-  const N2 = 3 * M0 - M1;
-  const N3 = 2 * M1 + a;
+  if (opts.trace) {
+    trace.push(cloneState(state));
+  }
 
-  next[RA] = N0;
-  next[RB] = N1;
-  next[RG] = N2;
-  next[RD] = N3;
-
-  return next;
-}
-
-// ------------------------------------------------------------
-// Program runners
-// ------------------------------------------------------------
-
-// Plain letter sequence (no niqqud)
-export function runProgramLetters(initial: State, program: LetterOp[]): State {
-  return program.reduce((st, op) => applyLetter(st, op), initial);
-}
-
-// Full niqqud-aware program
-export function runProgramInstr(initial: State, program: Instr[]): State {
-  return program.reduce((st, instr) => applyInstr(st, instr), initial);
-}
-
-// With trace
-export function runWithTrace(initial: State, program: Instr[]): TraceStep[] {
-  const steps: TraceStep[] = [];
-  let state = cloneState(initial);
-
-  program.forEach((instr, idx) => {
-    const before = cloneState(state);
-    const after = applyInstr(state, instr);
-    steps.push({ index: idx, instr, before, after });
-    state = after;
-  });
-
-  return steps;
+  return { final: state, trace, steps, executedOps };
 }
