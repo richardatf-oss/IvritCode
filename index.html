@@ -198,6 +198,8 @@
 
     .value-cell {
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      direction: ltr;        /* ensure Arabic numerals render naturally */
+      text-align: right;
     }
 
     .status {
@@ -241,6 +243,40 @@
       margin: 0;
     }
 
+    .trace-card {
+      margin-top: 0.5rem;
+    }
+
+    #traceList {
+      list-style: none;
+      padding-left: 0;
+      margin: 0.5rem 0 0;
+      max-height: 12rem;
+      overflow: auto;
+      font-size: 0.8rem;
+    }
+
+    #traceList li {
+      padding: 0.15rem 0;
+      border-bottom: 1px dashed #111827;
+      color: #e5e7eb;
+    }
+
+    #traceList li:last-child {
+      border-bottom: none;
+    }
+
+    #traceList code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      direction: ltr;
+    }
+
+    .trace-note {
+      font-size: 0.75rem;
+      color: #9ca3af;
+      margin-top: 0.35rem;
+    }
+
     footer {
       padding: 0.5rem 1.5rem 1rem;
       font-size: 0.75rem;
@@ -265,7 +301,7 @@
       <section class="card">
         <div class="card-header">
           <h2>Program</h2>
-          <span>Use only Hebrew letters א–ת. Other characters are ignored (for now, Niqqud = no-ops).</span>
+          <span>Use only Hebrew letters א–ת. Other characters are ignored (Niqqud currently treated as no-ops).</span>
         </div>
 
         <textarea
@@ -289,7 +325,7 @@
             </span>
           </div>
           <span class="mini-note">
-            Tip: You can edit registers manually in the code later; for now the VM starts with zeros.
+            Tip: Niqqud and punctuation are ignored; only base letters א–ת execute.
           </span>
         </div>
 
@@ -328,9 +364,27 @@
 
         <div class="status">
           <span>Steps executed: <strong id="stepsCount">0</strong></span>
-          <span>Last program: <code id="lastProgram" dir="rtl"></code></span>
+          <span>Last program:
+            <code id="lastProgram" dir="rtl"></code>
+          </span>
         </div>
       </section>
+    </section>
+
+    <!-- TRACE CARD -->
+    <section class="card trace-card">
+      <div class="card-header">
+        <h2>Execution trace</h2>
+        <span>One row per executed letter (up to 64 steps).</span>
+      </div>
+      <ol id="traceList">
+        <!-- filled by main.js -->
+      </ol>
+      <div class="trace-note">
+        Format:
+        <code>[step] op → א,ב,ג,ד,A</code>.
+        Initial all-zero state is not shown; this starts after the first instruction.
+      </div>
     </section>
   </main>
 
@@ -339,9 +393,6 @@
     <code>SPEC.md</code>.
   </footer>
 
-  <!-- NOTE:
-       This expects a compiled main.js which imports from vm.js.
-       After compiling TypeScript, ensure main.js/vm.js are in the same folder as this file. -->
   <script type="module" src="./main.js"></script>
 </body>
 </html>
