@@ -198,7 +198,7 @@
 
     .value-cell {
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      direction: ltr;        /* ensure Arabic numerals render naturally */
+      direction: ltr; /* force Arabic numerals to display in normal LTR order */
       text-align: right;
     }
 
@@ -382,8 +382,7 @@
       </ol>
       <div class="trace-note">
         Format:
-        <code>[step] op → א,ב,ג,ד,A</code>.
-        Initial all-zero state is not shown; this starts after the first instruction.
+        <code>[step] op → א,ב,ג,ד,A</code>. Initial all-zero state is not shown; this starts after the first instruction.
       </div>
     </section>
   </main>
@@ -393,6 +392,8 @@
     <code>SPEC.md</code>.
   </footer>
 
-  <script type="module" src="./main.js"></script>
+  <!-- IMPORTANT: plain scripts, vm.js defines window.IvritVM -->
+  <script src="./vm.js"></script>
+  <script src="./main.js"></script>
 </body>
 </html>
