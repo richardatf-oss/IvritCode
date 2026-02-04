@@ -70,7 +70,7 @@
 
     .layout {
       display: grid;
-      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.2fr);
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.1fr);
       gap: 1.5rem;
     }
 
@@ -130,6 +130,40 @@
       margin-top: 0.25rem;
     }
 
+    .two-column-right {
+      display: grid;
+      grid-template-rows: auto auto;
+      gap: 1rem;
+    }
+
+    .opcode-reference {
+      background: #0b0d12;
+      border: 1px solid #2a2f3a;
+      border-radius: 6px;
+      padding: 0.75rem;
+      max-height: 260px;
+      overflow-y: auto;
+      font-size: 0.85rem;
+    }
+
+    .opcode-item {
+      margin-bottom: 0.35rem;
+    }
+
+    .opcode-item span.letter {
+      font-weight: 600;
+      margin-right: 0.25rem;
+    }
+
+    .opcode-item span.name {
+      color: #f0d16a;
+      margin-right: 0.25rem;
+    }
+
+    .opcode-item span.summary {
+      color: #c0c6da;
+    }
+
     @media (max-width: 900px) {
       .layout {
         grid-template-columns: 1fr;
@@ -139,9 +173,9 @@
 </head>
 
 <body>
-  <h1>IvritCode — Register Initialization & Engine</h1>
+  <h1>IvritCode — Register Console & Base Engine</h1>
   <div class="subtitle">
-    Seed the 22 letter-registers (א–ת) and Aleph-Olam (A), enter a program, and execute the base IvritCode letter semantics.
+    Seed the 22 letter-registers (א–ת) and Aleph-Olam (A), enter a program, and see exactly what each IvritCode letter does to the state.
   </div>
 
   <div class="layout">
@@ -163,10 +197,17 @@
       </div>
     </div>
 
-    <!-- Right: Output -->
-    <div>
-      <h2>Execution Trace</h2>
-      <pre id="output">(trace and final state will appear here)</pre>
+    <!-- Right: Output + Opcode Reference -->
+    <div class="two-column-right">
+      <div>
+        <h2>Execution Trace</h2>
+        <pre id="output">(trace and final state will appear here)</pre>
+      </div>
+
+      <div>
+        <h2>Opcode Reference (Base Letters)</h2>
+        <div id="opcodeRef" class="opcode-reference"></div>
+      </div>
     </div>
   </div>
 
@@ -188,11 +229,126 @@
     const ROLE_GAMMA = 2;
     const ROLE_DELTA = 3;
 
+    // Human-readable info for each opcode
+    const OPCODE_INFO = {
+      "א": {
+        name: "Alef",
+        summary: "Identity (no-op)",
+        detail: "Does nothing to the registers; often used as a frame marker."
+      },
+      "ב": {
+        name: "Bet",
+        summary: "Addition",
+        detail: "Adds register א (alpha) and ב (beta), stores result in ג (gamma)."
+      },
+      "ג": {
+        name: "Gimel",
+        summary: "Multiplication",
+        detail: "Multiplies registers א (alpha) and ב (beta), stores result in ד (delta)."
+      },
+      "ד": {
+        name: "Dalet",
+        summary: "Difference pair",
+        detail: "Computes ג = ב − א and ד = א − ב."
+      },
+      "ה": {
+        name: "Hei",
+        summary: "Sign of α",
+        detail: "Writes sign(א) into register ה: 1 if א>0, 0 if א=0, −1 if א<0."
+      },
+      "ו": {
+        name: "Vav",
+        summary: "Swap α and β",
+        detail: "Swaps the values of א (alpha) and ב (beta)."
+      },
+      "ז": {
+        name: "Zayin",
+        summary: "Increment α",
+        detail: "Increments register א (alpha) by 1."
+      },
+      "ח": {
+        name: "Chet",
+        summary: "Decrement α",
+        detail: "Decrements register א (alpha) by 1."
+      },
+      "ט": {
+        name: "Tet",
+        summary: "Square α into γ",
+        detail: "Squares register א (alpha) and stores the result into ג (gamma)."
+      },
+      "י": {
+        name: "Yod",
+        summary: "Load A into α",
+        detail: "Loads Aleph-Olam (A) into register א (alpha)."
+      },
+      "כ": {
+        name: "Kaf",
+        summary: "Quartet sum → A",
+        detail: "Sums א, ב, ג, ד and stores the total into A."
+      },
+      "ל": {
+        name: "Lamed",
+        summary: "Global sum → A",
+        detail: "Sums all 22 letter registers (א–ת) and stores the total into A."
+      },
+      "מ": {
+        name: "Mem",
+        summary: "Quartet mean → γ",
+        detail: "Computes the integer mean of א, ב, ג, ד and writes it into ג."
+      },
+      "נ": {
+        name: "Nun",
+        summary: "Negate α",
+        detail: "Replaces register א (alpha) with its negation."
+      },
+      "ס": {
+        name: "Samekh",
+        summary: "Rotate letters",
+        detail: "Cyclically rotates the 22 letter registers one step; A unchanged."
+      },
+      "ע": {
+        name: "Ayin",
+        summary: "Dot product → A",
+        detail: "Dot product of א..כ with ל..ת; writes sum into A."
+      },
+      "פ": {
+        name: "Pe",
+        summary: "Expose α → A",
+        detail: "Copies register א (alpha) into A."
+      },
+      "צ": {
+        name: "Tsadi",
+        summary: "Compare α and β → A",
+        detail: "Compares א and ב: writes 1 to A if א>ב, 0 if equal, −1 if א<ב."
+      },
+      "ק": {
+        name: "Qof",
+        summary: "Mirror letters",
+        detail: "Reverses the order of the 22 letter registers; A unchanged."
+      },
+      "ר": {
+        name: "Resh",
+        summary: "Reseed quartet from A",
+        detail: "Sets א=A, ב=A+1, ג=A+2, ד=A+3."
+      },
+      "ש": {
+        name: "Shin",
+        summary: "Nonlinear mix",
+        detail: "Applies: א'=א²+ב, ב'=ב²+ג, ג'=ג²+ד, ד'=ד²+א."
+      },
+      "ת": {
+        name: "Tav",
+        summary: "Rotate quartet",
+        detail: "Rotates roles: א←ג, ב←ד, ג←א, ד←ב."
+      }
+    };
+
     // --- UI setup ------------------------------------------------------------
 
     const grid = document.getElementById("registerGrid");
     const output = document.getElementById("output");
     const programInput = document.getElementById("programInput");
+    const opcodeRef = document.getElementById("opcodeRef");
 
     // Build letter register inputs
     LETTERS.forEach((letter, i) => {
@@ -215,6 +371,27 @@
       <input type="number" value="0" data-index="${INDEX_A}" />
     `;
     grid.appendChild(aCell);
+
+    // Build opcode reference list
+    function renderOpcodeReference() {
+      const frag = document.createDocumentFragment();
+      LETTERS.forEach(letter => {
+        const info = OPCODE_INFO[letter];
+        if (!info) return;
+        const div = document.createElement("div");
+        div.className = "opcode-item";
+        div.innerHTML = `
+          <span class="letter">${letter}</span>
+          <span class="name">${info.name}</span>
+          <span class="summary">— ${info.summary}</span>
+        `;
+        div.title = info.detail;
+        frag.appendChild(div);
+      });
+      opcodeRef.innerHTML = "";
+      opcodeRef.appendChild(frag);
+    }
+    renderOpcodeReference();
 
     function collectState() {
       const state = new Array(23).fill(0);
@@ -247,10 +424,6 @@
       return state.slice();
     }
 
-    /**
-     * Apply one base-letter instruction to the given state (in-place).
-     * This currently implements only the unmodified base semantics (no niqqud, no trop).
-     */
     function applyLetterOp(letter, state) {
       const idx = LETTER_INDEX.get(letter);
       if (idx == null) return; // ignore unknown
@@ -272,23 +445,19 @@
           break;
         }
         case "ב": {
-          // Bet: Addition, g' = a + b
           state[gIdx] = a + b;
           break;
         }
         case "ג": {
-          // Gimel: Multiplication, d' = a * b
           state[dIdx] = a * b;
           break;
         }
         case "ד": {
-          // Dalet: Difference pair
           state[gIdx] = b - a;
           state[dIdx] = a - b;
           break;
         }
         case "ה": {
-          // Hei: sign(a) into register of Hei (index of ה)
           const heiIndex = LETTER_INDEX.get("ה");
           let sign = 0;
           if (a > 0) sign = 1;
@@ -297,69 +466,56 @@
           break;
         }
         case "ו": {
-          // Vav: swap α and β
           const tmp = state[aIdx];
           state[aIdx] = state[bIdx];
           state[bIdx] = tmp;
           break;
         }
         case "ז": {
-          // Zayin: increment α
           state[aIdx] = a + 1;
           break;
         }
         case "ח": {
-          // Chet: decrement α
           state[aIdx] = a - 1;
           break;
         }
         case "ט": {
-          // Tet: square α into γ
           state[gIdx] = a * a;
           break;
         }
         case "י": {
-          // Yod: load A into α
           state[aIdx] = AO;
           break;
         }
         case "כ": {
-          // Kaf: quartet sum into A
           state[INDEX_A] = a + b + g + d;
           break;
         }
         case "ל": {
-          // Lamed: global sum of letter registers into A
           let sum = 0;
           for (let i = 0; i < 22; i++) sum += state[i];
           state[INDEX_A] = sum;
           break;
         }
         case "מ": {
-          // Mem: mean of quartet into γ
           const mean = Math.floor((a + b + g + d) / 4);
           state[gIdx] = mean;
           break;
         }
         case "נ": {
-          // Nun: negate α
           state[aIdx] = -a;
           break;
         }
         case "ס": {
-          // Samekh: rotate 22 letter registers
           const prev = state.slice(0, 22);
           for (let i = 0; i < 22; i++) {
             const from = (i - 1 + 22) % 22;
             state[i] = prev[from];
           }
-          // A unchanged
           break;
         }
         case "ע": {
-          // Ayin: dot product of halves into A
           let sum = 0;
-          // u0..u10 = r0..r10; v0..v10 = r11..r21
           for (let i = 0; i <= 10; i++) {
             const u = state[i];
             const v = state[i + 11];
@@ -369,12 +525,10 @@
           break;
         }
         case "פ": {
-          // Pe: expose α into A
           state[INDEX_A] = a;
           break;
         }
         case "צ": {
-          // Tsadi: compare α and β to A
           let sign = 0;
           if (a > b) sign = 1;
           else if (a < b) sign = -1;
@@ -382,7 +536,6 @@
           break;
         }
         case "ק": {
-          // Qof: mirror letter registers, A unchanged
           const prev = state.slice(0, 22);
           for (let i = 0; i < 22; i++) {
             state[i] = prev[21 - i];
@@ -390,7 +543,6 @@
           break;
         }
         case "ר": {
-          // Resh: reseed quartet from A
           state[aIdx] = AO;
           state[bIdx] = AO + 1;
           state[gIdx] = AO + 2;
@@ -398,7 +550,6 @@
           break;
         }
         case "ש": {
-          // Shin: nonlinear mix on roles
           const newA = a * a + b;
           const newB = b * b + g;
           const newG = g * g + d;
@@ -410,7 +561,6 @@
           break;
         }
         case "ת": {
-          // Tav: rotate quartet
           const newA = g;
           const newB = d;
           const newG = a;
@@ -422,21 +572,15 @@
           break;
         }
         default: {
-          // Should not happen; unknown letters are ignored
           break;
         }
       }
     }
 
-    /**
-     * Run a base IvritCode program consisting of letters א–ת.
-     * Ignores niqqud and trop for now.
-     */
     function runProgram(initialState, program, maxSteps = 1000) {
       const state = cloneState(initialState);
       const instructions = [];
 
-      // Extract only base letters א–ת as opcodes
       for (const ch of program) {
         if (LETTER_INDEX.has(ch)) {
           instructions.push(ch);
@@ -460,7 +604,51 @@
         });
       }
 
-      return { finalState: state, trace };
+      return { finalState: state, trace, instructions };
+    }
+
+    // --- Helper: explain state changes --------------------------------------
+
+    function explainStep(step) {
+      const { letter, before, after, index } = step;
+      const info = OPCODE_INFO[letter] || {};
+      const name = info.name || "?";
+      const summary = info.summary || "";
+      const detail = info.detail || "";
+
+      let text = "";
+      text += `Step ${index} — Letter ${letter} (${name}): ${summary}\n`;
+      if (detail) {
+        text += `  ${detail}\n`;
+      }
+
+      // Find which registers changed
+      const changes = [];
+      for (let i = 0; i < after.length; i++) {
+        if (before[i] !== after[i]) {
+          // Index 0..21 are letters, 22 is A
+          const regName = i === INDEX_A ? "A" : LETTERS[i];
+          changes.push({
+            index: i,
+            regName,
+            before: before[i],
+            after: after[i]
+          });
+        }
+      }
+
+      if (changes.length === 0) {
+        text += "  No registers changed.\n\n";
+        return text;
+      }
+
+      text += "  Changes:\n";
+      for (const c of changes) {
+        text += `    ${c.regName} (index ${c.index}): ${c.before} → ${c.after}\n`;
+      }
+      text += "\n";
+
+      return text;
     }
 
     // --- Hook up UI actions --------------------------------------------------
@@ -469,9 +657,9 @@
       const initialState = collectState();
       const program = programInput.value || "";
 
-      const { finalState, trace } = runProgram(initialState, program, 1000);
+      const { finalState, trace, instructions } = runProgram(initialState, program, 1000);
 
-      // Update the UI inputs to show final state
+      // Update UI with final state
       setState(finalState);
 
       if (trace.length === 0) {
@@ -482,15 +670,16 @@
         return;
       }
 
-      let text = "Initial State R(23):\n";
+      let text = "";
+      text += "Program (interpreted letters only):\n";
+      text += instructions.join("") + "\n\n";
+
+      text += "Initial State R(23):\n";
       text += JSON.stringify(initialState, null, 2) + "\n\n";
 
       text += "Execution Trace (base letters only; niqqud/trop ignored for now):\n\n";
-
       for (const step of trace) {
-        text += `Step ${step.index} — Letter: ${step.letter}\n`;
-        text += "  Before: " + JSON.stringify(step.before) + "\n";
-        text += "  After:  " + JSON.stringify(step.after) + "\n\n";
+        text += explainStep(step);
       }
 
       text += "Final State R(23):\n";
