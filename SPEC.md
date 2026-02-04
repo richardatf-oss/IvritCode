@@ -1,354 +1,114 @@
-IvritCode Specification (v0.0)
+# IvritCode — Full Language Specification  
+## SPEC.md  
+### Version 1.0 (Canonical)
 
-Overview
+> _“The letters act.  
+> The breath shapes.  
+> The melody decides when.”_
+
 IvritCode is a symbolic machine language in which:
 
-Hebrew letters (א–ת) act as operators (instructions),
+- Hebrew letters (א–ת) act as **operators (instructions)**,  
+- Hebrew letters (א–ת) also name **registers (storage locations)**,  
+- **Niqqud** (vowel points) act as **instruction modifiers**, and  
+- A special register **A** represents **Aleph-Olam**, a hidden global register.
 
-Hebrew letters (א–ת) also name registers (storage locations),
+This document defines **IvritCode v1.0**, including:
 
-Niqqud (vowel points) act as instruction modifiers, and
+1. Machine state and registers  
+2. Base (unmodified) semantics of each letter-operator  
+3. Niqqud (vowel) modifier semantics  
+4. Trop (cantillation) structural and control-flow semantics  
+5. The unified execution pipeline
 
-A special register A represents Aleph-Olam, a hidden global register.
+---
 
-This document defines IvritCode v0.0, including the machine state, register layout, and the base (unmodified) semantics of each letter-operator.
+## 1. Machine State
 
-Niqqud modifiers are specified separately and layer cleanly on top of this base instruction set.
+### 1.1 State Space
 
-Machine State 2.1 State Space
 The IvritCode machine state is a fixed-length vector:
 
-𝑆 ∈ 𝑅 23 S∈R 23
+\[
+S \in R^{23}
+\]
 
-where 𝑅 R is a ring (v0 reference implementation uses integers; future versions may use a finite field).
+where \(R\) is a ring (the reference implementation uses integers; future versions may use a finite field).
 
-2.2 Registers
+Write:
 
-The 23 registers are named as follows:
+\[
+S = (r_\text{א}, r_\text{ב}, \dots, r_\text{ת}, r_A)
+\]
 
-Index Name Description 0–21 א–ת One register per Hebrew letter 22 A Aleph-Olam (hidden/global register)
+### 1.2 Registers
 
-The register named A is not a Hebrew letter; it is a distinguished global register used for aggregation, inspection, and seeding.
+There are 23 registers:
 
-2.3 Working Quartet
+- **22 letter registers**: one per Hebrew letter א–ת (indices 0–21)
+- **1 global register**: A (index 22), Aleph-Olam
 
-In v0, several instructions operate specifically on the working quartet:
+| Index | Name | Description                     |
+|-------|------|---------------------------------|
+| 0–21  | א–ת  | One register per Hebrew letter  |
+| 22    | A    | Aleph-Olam (hidden/global)      |
 
-( א , ב , ג , ד ) (א,ב,ג,ד)
+The register named **A** is not a letter; it is a distinguished global register used for aggregation, inspection, and seeding.
 
-These correspond to registers:
+All registers are mutable unless a modifier enforces purity for a given operation.
 
-א = primary input
+---
 
-ב = secondary input
+### 1.3 Roles (α, β, γ, δ)
 
-ג = derived value
+To express base semantics cleanly, IvritCode uses **logical roles** instead of hard-wiring a “working quartet” forever:
 
-ד = derived value
+- **α** — primary source
+- **β** — secondary source
+- **γ** — primary result
+- **δ** — secondary result
 
-All other registers remain unchanged unless explicitly stated.
+A **role binding** maps roles to letter registers for each instruction:
 
-Instructions 3.1 Instruction Structure
-An instruction consists of:
+\[
+\text{bind} : \{\alpha, \beta, \gamma, \delta\} \to \{\text{א} \dots \text{ת}\}
+\]
 
-A letter operator 𝐿 ∈ { א , … , ת } L∈{א,…,ת}
+#### Default role binding
 
-Optional niqqud modifiers (not covered in this section)
+By default (with no addressing modifiers):
 
-This section defines the default (unmodified) semantics of each letter operator.
+- α → א  
+- β → ב  
+- γ → ג  
+- δ → ד  
 
-Letter Semantics (Base Forms)
-Let the current machine state be:
+This preserves the original “working quartet” behavior while allowing niqqud to rebind roles so that **any** register can serve as α, β, γ, δ.
 
-𝑆
-( 𝑟 א , 𝑟 ב , … , 𝑟 ת , 𝑟 𝐴 ) S=(r א​
+We also denote:
 
-,r ב​
+- \(a = r_{\alpha}\)
+- \(b = r_{\beta}\)
+- \(g = r_{\gamma}\)
+- \(d = r_{\delta}\)
+- \(A_O = r_A\) (Aleph-Olam)
 
-,…,r ת​
+---
 
-,r A​
+## 2. Instruction Structure
 
-)
+Each **instruction** in IvritCode is a single **letter with optional marks**:
 
-For brevity below:
+- A base letter-operator \(L \in \{\text{א}, \dots, \text{ת}\}\)
+- Zero or more **niqqud** marks attached to that letter
+- Zero or more **trop** marks attached to that letter
 
-𝑎
-𝑟 א a=r א​
+Conceptually:
 
-𝑏
-𝑟 ב b=r ב​
-
-𝑔
-𝑟 ג g=r ג​
-
-𝑑
-𝑟 ד d=r ד​
-
-𝐴 𝑂
-𝑟 𝐴 AO=r A​
-
-All registers not mentioned explicitly remain unchanged.
-
-א — Alef (Identity)
-
-Description: No-operation; establishes a frame.
-
-𝛿 א ( 𝑆 )
-𝑆 δ א​
-
-(S)=S ב — Bet (Addition)
-
-Description: Add Alef and Bet, store in Gimel.
-
-𝑔 ′
-𝑎 + 𝑏 g ′ =a+b ג — Gimel (Multiplication)
-
-Description: Multiply Alef and Bet, store in Dalet.
-
-𝑑 ′
-𝑎 ⋅ 𝑏 d ′ =a⋅b ד — Dalet (Difference Pair)
-
-Description: Compute forward and reverse differences.
-
-𝑔 ′
-
-= 𝑏 − 𝑎
-
-𝑑 ′
-
-= 𝑎 − 𝑏 g ′ d ′​
-
-=b−a =a−b​
-
-ה — Hei (Sign of Alef)
-
-Description: Store the sign of Alef in Hei.
-
-ℎ ′
-{ 1
-
-𝑎
-
-0
-
-0
-
-𝑎
-0
-
-− 1
-
-𝑎 < 0 h ′
-⎩ ⎨ ⎧​
-
-1 0 −1​
-
-a>0 a=0 a<0​
-
-ו — Vav (Swap)
-
-Description: Swap Alef and Bet.
-
-( 𝑎 ′ , 𝑏 ′ )
-( 𝑏 , 𝑎 ) (a ′ ,b ′ )=(b,a) ז — Zayin (Increment)
-
-Description: Increment Alef.
-
-𝑎 ′
-𝑎 + 1 a ′ =a+1 ח — Chet (Decrement)
-
-Description: Decrement Alef.
-
-𝑎 ′
-𝑎 − 1 a ′ =a−1 ט — Tet (Square)
-
-Description: Square Alef into Gimel.
-
-𝑔 ′
-𝑎 2 g ′ =a 2 י — Yod (Load from Aleph-Olam)
-
-Description: Load Aleph-Olam into Alef.
-
-𝑎 ′
-𝐴 𝑂 a ′ =AO כ — Kaf (Quartet Sum)
-
-Description: Sum the working quartet into Aleph-Olam.
-
-𝐴 𝑂 ′
-𝑎 + 𝑏 + 𝑔 + 𝑑 AO ′ =a+b+g+d ל — Lamed (Global Sum)
-
-Description: Sum all Hebrew letter registers into Aleph-Olam.
-
-𝐴 𝑂 ′
-∑ 𝑖
-0 21 𝑟 𝑖 AO ′
-i=0 ∑ 21​
-
-r i​
-
-מ — Mem (Mean)
-
-Description: Compute the integer mean of the working quartet into Gimel.
-
-𝑔 ′
-⌊ 𝑎 + 𝑏 + 𝑔 + 𝑑 4 ⌋ g ′ =⌊ 4 a+b+g+d​
-
-⌋ נ — Nun (Negation)
-
-Description: Negate Alef.
-
-𝑎 ′
-− 𝑎 a ′ =−a ס — Samekh (Cyclic Rotation)
-
-Description: Rotate all 22 Hebrew registers cyclically.
-
-𝑟 𝑖 ′
-𝑟 ( 𝑖 − 1 )   m o d   22 r i ′​
-
-=r (i−1)mod22​
-
-Aleph-Olam is unchanged.
-
-ע — Ayin (Dot Product)
-
-Description: Dot product of the first and second halves of the alphabet.
-
-Let:
-
-𝑢 𝑖
-𝑟 𝑖 u i​
-
-=r i​
-
-for 𝑖
-0..10 i=0..10 (א–כ)
-
-𝑣 𝑖
-𝑟 𝑖 + 11 v i​
-
-=r i+11​
-
-for 𝑖
-0..10 i=0..10 (ל–ת)
-
-𝐴 𝑂 ′
-∑ 𝑖
-0 10 𝑢 𝑖 ⋅ 𝑣 𝑖 AO ′
-i=0 ∑ 10​
-
-u i​
-
-⋅v i​
-
-פ — Pe (Expose Alef)
-
-Description: Copy Alef into Aleph-Olam.
-
-𝐴 𝑂 ′
-𝑎 AO ′ =a צ — Tsadi (Comparison)
-
-Description: Compare Alef and Bet.
-
-𝐴 𝑂 ′
-{ 1
-
-𝑎
-
-𝑏
-
-0
-
-𝑎
-𝑏
-
-− 1
-
-𝑎 < 𝑏 AO ′
-⎩ ⎨ ⎧​
-
-1 0 −1​
-
-a>b a=b a<b​
-
-ק — Qof (Mirror)
-
-Description: Reverse all Hebrew registers.
-
-𝑟 𝑖 ′
-𝑟 21 − 𝑖 r i ′​
-
-=r 21−i​
-
-Aleph-Olam unchanged.
-
-ר — Resh (Reseed Quartet)
-
-Description: Reinitialize the working quartet from Aleph-Olam.
-
-𝑎 ′
-
-= 𝐴 𝑂
-
-𝑏 ′
-
-= 𝐴 𝑂 + 1
-
-𝑔 ′
-
-= 𝐴 𝑂 + 2
-
-𝑑 ′
-
-= 𝐴 𝑂 + 3 a ′ b ′ g ′ d ′​
-
-=AO =AO+1 =AO+2 =AO+3​
-
-ש — Shin (Nonlinear Mix)
-
-Description: Nonlinear transformation of the working quartet.
-
-𝑎 ′
-
-= 𝑎 2 + 𝑏
-
-𝑏 ′
-
-= 𝑏 2 + 𝑔
-
-𝑔 ′
-
-= 𝑔 2 + 𝑑
-
-𝑑 ′
-
-= 𝑑 2 + 𝑎 a ′ b ′ g ′ d ′​
-
-=a 2 +b =b 2 +g =g 2 +d =d 2 +a​
-
-ת — Tav (Quartet Rotation)
-
-Description: Rotate the working quartet.
-
-( 𝑎 ′ , 𝑏 ′ , 𝑔 ′ , 𝑑 ′ )
-( 𝑔 , 𝑑 , 𝑎 , 𝑏 ) (a ′ ,b ′ ,g ′ ,d ′ )=(g,d,a,b) 5. Aleph-Olam (A)
-
-A is not an operator in v0.
-
-A is a persistent global register.
-
-Many operators read from or write to A.
-
-Future versions may define an explicit A instruction.
-
-Niqqud Modifiers (Reserved)
-Niqqud marks act as instruction modifiers (e.g. purity, immediates, scope).
-
-This specification defines only the base letter semantics. Modifier semantics are defined in a separate section.
-
-Determinism
-IvritCode v0 instructions are deterministic:
-
-Identical initial states and identical instruction sequences always produce identical final states.
-
-End of IvritCode
+```text
+Instruction = {
+  base: Letter,          // א..ת
+  niqqud: [NiqqudMark],  // vowel points and related marks
+  trop: [TropMark],      // cantillation marks
+  pos: SourceLocation    // (line/column) for debugging (optional)
+}
