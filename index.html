@@ -2,562 +2,174 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>IvritCode v0.0 — Minimal Playground</title>
+  <title>IvritCode v1.0 — Register Console</title>
+
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <style>
-    :root {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #050816;
-      color: #f9fafb;
-      --accent: #fbbf24;
-      --border: #1f2937;
-    }
-
     body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f1115;
+      color: #eaeaf0;
       margin: 0;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
+      padding: 1.5rem;
     }
 
-    header {
-      padding: 1rem 1.5rem 0.5rem;
-      border-bottom: 1px solid var(--border);
-      background: radial-gradient(circle at 0% 0%, #1d2538, #050816 55%);
+    h1 {
+      margin-top: 0;
+      font-weight: 600;
+      letter-spacing: 0.04em;
     }
 
-    header h1 {
-      margin: 0;
-      font-size: 1.4rem;
-      letter-spacing: 0.05em;
+    .subtitle {
+      color: #9aa0b4;
+      margin-bottom: 2rem;
     }
 
-    header h1 span {
-      color: var(--accent);
-    }
-
-    header p {
-      margin: 0.35rem 0 0.75rem;
-      font-size: 0.9rem;
-    }
-
-    main {
-      flex: 1;
-      padding: 1rem 1.5rem 1.5rem;
+    .grid {
       display: grid;
-      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-      grid-template-rows: auto auto;
-      gap: 1rem;
+      grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 2rem;
     }
 
-    @media (max-width: 900px) {
-      main {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto auto auto;
-      }
+    .cell {
+      background: #181b22;
+      border: 1px solid #2a2f3a;
+      border-radius: 6px;
+      padding: 0.5rem;
+      text-align: center;
     }
 
-    .card {
-      background: #020617;
-      border-radius: 0.9rem;
-      border: 1px solid var(--border);
-      padding: 0.9rem;
-      box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+    .cell label {
+      display: block;
+      font-size: 1.1rem;
+      margin-bottom: 0.25rem;
     }
 
-    .card h2 {
-      margin: 0 0 0.5rem;
-      font-size: 1rem;
-    }
-
-    textarea {
+    .cell input {
       width: 100%;
-      min-height: 7rem;
-      resize: vertical;
-      padding: 0.7rem 0.8rem;
-      border-radius: 0.7rem;
-      border: 1px solid var(--border);
-      background: #020617;
-      color: #f9fafb;
-      font-family: "Courier New", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 1.05rem;
-      line-height: 1.4;
-      direction: rtl;
+      background: #0f1115;
+      color: #ffffff;
+      border: 1px solid #3a3f4b;
+      border-radius: 4px;
+      padding: 0.25rem;
+      font-size: 0.95rem;
+      text-align: center;
     }
 
-    textarea::placeholder {
-      color: #6b7280;
+    .cell.global {
+      border-color: #c9a227;
+      background: #1b1a10;
     }
 
-    .controls {
+    .actions {
       display: flex;
+      gap: 1rem;
       align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem;
-      margin-top: 0.5rem;
-      font-size: 0.8rem;
-      color: #9ca3af;
+      margin-bottom: 1.5rem;
     }
 
     button {
+      background: #2c6bed;
+      color: #ffffff;
       border: none;
-      border-radius: 999px;
-      padding: 0.45rem 1.1rem;
+      border-radius: 6px;
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
       cursor: pointer;
+    }
+
+    button.secondary {
+      background: #3a3f4b;
+    }
+
+    button:hover {
+      filter: brightness(1.1);
+    }
+
+    pre {
+      background: #0b0d12;
+      border: 1px solid #2a2f3a;
+      border-radius: 6px;
+      padding: 1rem;
+      overflow-x: auto;
       font-size: 0.9rem;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-      background: linear-gradient(135deg, var(--accent), #f97316);
-      color: #111827;
-      box-shadow: 0 10px 30px rgba(251,191,36,0.4);
-    }
-
-    button:active {
-      transform: translateY(1px);
-      box-shadow: 0 5px 18px rgba(251,191,36,0.3);
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.85rem;
-    }
-
-    th, td {
-      border-bottom: 1px solid #111827;
-      padding: 0.3rem 0.25rem;
-      text-align: right;
-    }
-
-    th {
-      color: #9ca3af;
-      font-weight: 500;
-    }
-
-    .reg-name {
-      font-family: "SBL Hebrew", "Times New Roman", serif;
-      font-size: 1.05rem;
-    }
-
-    .reg-name.global {
-      color: var(--accent);
-      font-weight: 700;
-    }
-
-    .value-cell {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      direction: ltr; /* ensure Arabic numerals render naturally */
-    }
-
-    .status {
-      margin-top: 0.4rem;
-      font-size: 0.8rem;
-      color: #9ca3af;
-      display: flex;
-      justify-content: space-between;
-      gap: 0.4rem;
-      flex-wrap: wrap;
-    }
-
-    #traceList {
-      list-style: none;
-      padding-left: 0;
-      margin: 0.3rem 0 0;
-      max-height: 11rem;
-      overflow: auto;
-      font-size: 0.8rem;
-    }
-
-    #traceList li {
-      border-bottom: 1px dashed #111827;
-      padding: 0.15rem 0;
-    }
-
-    #traceList li:last-child {
-      border-bottom: none;
-    }
-
-    #traceList code {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      direction: ltr;
-    }
-
-    footer {
-      padding: 0.5rem 1.5rem 1rem;
-      font-size: 0.75rem;
-      color: #6b7280;
-      border-top: 1px solid #020617;
-      background: #020617;
+      color: #d0d6ff;
     }
   </style>
 </head>
+
 <body>
-  <header>
-    <h1>IvritCode <span>v0.0</span> — Aleph-Olam VM</h1>
-    <p>Hebrew letters (א–ת) as opcodes, one global register <code>A</code>, and a working quartet (א,ב,ג,ד).</p>
-  </header>
+  <h1>IvritCode — Register Initialization</h1>
+  <div class="subtitle">
+    Seed the 22 letter-registers (א–ת) and Aleph-Olam (A) before execution.
+  </div>
 
-  <main>
-    <!-- Program input -->
-    <section class="card" style="grid-column: 1 / 2; grid-row: 1 / 2;">
-      <h2>Program</h2>
-      <textarea id="program" placeholder="Example: אבבגת
-• א — no-op
-• ב — add Alef+Bet → Gimel
-• ג — multiply Alef⋅Bet → Dalet
-• ת — rotate quartet (א,ב,ג,ד)"></textarea>
-      <div class="controls">
-        <button id="runBtn">▶ Run IvritCode</button>
-        <span>Only letters א–ת execute. Niqqud and punctuation are ignored.</span>
-      </div>
-    </section>
+  <div id="registerGrid" class="grid"></div>
 
-    <!-- Registers -->
-    <section class="card" style="grid-column: 2 / 3; grid-row: 1 / 2;">
-      <h2>Registers</h2>
-      <div style="max-height: 15rem; overflow:auto;">
-        <table>
-          <thead>
-            <tr>
-              <th>Register</th>
-              <th>Index</th>
-              <th>Value</th>
-            </tr>
-          </thead>
-          <tbody id="registersBody"></tbody>
-        </table>
-      </div>
-      <div class="status">
-        <span>Steps: <strong id="stepsCount">0</strong></span>
-        <span>Last program: <code id="lastProgram" dir="rtl"></code></span>
-      </div>
-    </section>
+  <div class="actions">
+    <button id="runBtn">Assemble State</button>
+    <button id="resetBtn" class="secondary">Reset</button>
+  </div>
 
-    <!-- Trace -->
-    <section class="card" style="grid-column: 1 / 3; grid-row: 2 / 3;">
-      <h2>Execution trace</h2>
-      <div>Format: <code>[step] op → א,ב,ג,ד,A</code></div>
-      <ol id="traceList"></ol>
-    </section>
-  </main>
+  <pre id="output">(state will appear here)</pre>
 
-  <footer>
-    IvritCode v0.0 — base letter semantics only (Niqqud reserved for modifiers). Deterministic, 23-register state.
-  </footer>
-
-  <!-- Inline JS so we know exactly what's running -->
   <script>
-    // ==== CORE VM (from SPEC.md) =========================================
-    const HEBREW_LETTERS = "אבגדהוזחטיכלמנסעפצקרשת";
-    const NUM_HEBREW_REGS = 22;
-    const AO_INDEX = 22; // Aleph-Olam
+    // Hebrew alphabet (22 letters)
+    const LETTERS = "אבגדהוזחטיכלמנסעפצקרשת".split("");
 
-    const ALEF = 0;
-    const BET  = 1;
-    const GIMEL = 2;
-    const DALET = 3;
+    const grid = document.getElementById("registerGrid");
+    const output = document.getElementById("output");
 
-    const REGISTER_NAMES = [...HEBREW_LETTERS.split(""), "A"];
+    // Build letter register inputs
+    LETTERS.forEach((letter, i) => {
+      const cell = document.createElement("div");
+      cell.className = "cell";
 
-    function createState() {
-      return { regs: new Array(NUM_HEBREW_REGS + 1).fill(0) };
-    }
+      cell.innerHTML = `
+        <label>${letter}</label>
+        <input type="number" value="0" data-index="${i}" />
+      `;
 
-    function cloneState(state) {
-      return { regs: state.regs.slice() };
-    }
+      grid.appendChild(cell);
+    });
 
-    function sign(x) {
-      if (x > 0) return 1;
-      if (x < 0) return -1;
-      return 0;
-    }
+    // Aleph-Olam (A)
+    const aCell = document.createElement("div");
+    aCell.className = "cell global";
+    aCell.innerHTML = `
+      <label>A</label>
+      <input type="number" value="0" data-index="22" />
+    `;
+    grid.appendChild(aCell);
 
-    function step(state, op) {
-      const r = state.regs;
-      const next = r.slice();
-
-      const a = r[ALEF];
-      const b = r[BET];
-      const g = r[GIMEL];
-      const d = r[DALET];
-      const AO = r[AO_INDEX];
-
-      switch (op) {
-        case "א":
-          // Identity (no-op)
-          return state;
-
-        case "ב":
-          // g' = a + b
-          next[GIMEL] = a + b;
-          break;
-
-        case "ג":
-          // d' = a ⋅ b
-          next[DALET] = a * b;
-          break;
-
-        case "ד":
-          // g' = b − a ; d' = a − b
-          next[GIMEL] = b - a;
-          next[DALET] = a - b;
-          break;
-
-        case "ה": {
-          // sign of Alef into ה
-          const HEI = HEBREW_LETTERS.indexOf("ה");
-          if (HEI !== -1) next[HEI] = sign(a);
-          break;
-        }
-
-        case "ו":
-          // swap a,b
-          next[ALEF] = b;
-          next[BET]  = a;
-          break;
-
-        case "ז":
-          // increment Alef
-          next[ALEF] = a + 1;
-          break;
-
-        case "ח":
-          // decrement Alef
-          next[ALEF] = a - 1;
-          break;
-
-        case "ט":
-          // square into g
-          next[GIMEL] = a * a;
-          break;
-
-        case "י":
-          // load AO into a
-          next[ALEF] = AO;
-          break;
-
-        case "כ":
-          // quartet sum into AO
-          next[AO_INDEX] = a + b + g + d;
-          break;
-
-        case "ל": {
-          // sum all Hebrew regs into AO
-          let sum = 0;
-          for (let i = 0; i < NUM_HEBREW_REGS; i++) sum += r[i];
-          next[AO_INDEX] = sum;
-          break;
-        }
-
-        case "מ":
-          // mean of quartet into g
-          next[GIMEL] = Math.floor((a + b + g + d) / 4);
-          break;
-
-        case "נ":
-          // negate a
-          next[ALEF] = -a;
-          break;
-
-        case "ס":
-          // cyclic rotation of 22 Hebrew regs
-          for (let i = 0; i < NUM_HEBREW_REGS; i++) {
-            const from = (i - 1 + NUM_HEBREW_REGS) % NUM_HEBREW_REGS;
-            next[i] = r[from];
-          }
-          next[AO_INDEX] = AO;
-          break;
-
-        case "ע": {
-          // dot product (א..כ) · (ל..ת)
-          let sum = 0;
-          for (let i = 0; i <= 10; i++) {
-            const u = r[i];
-            const v = r[i + 11];
-            sum += u * v;
-          }
-          next[AO_INDEX] = sum;
-          break;
-        }
-
-        case "פ":
-          // expose Alef into AO
-          next[AO_INDEX] = a;
-          break;
-
-        case "צ":
-          // comparison: AO' = sign(a - b)
-          next[AO_INDEX] = sign(a - b);
-          break;
-
-        case "ק":
-          // mirror 0..21, AO unchanged
-          for (let i = 0; i < NUM_HEBREW_REGS; i++) {
-            next[i] = r[NUM_HEBREW_REGS - 1 - i];
-          }
-          next[AO_INDEX] = AO;
-          break;
-
-        case "ר":
-          // reseed quartet from AO
-          next[ALEF] = AO;
-          next[BET]  = AO + 1;
-          next[GIMEL] = AO + 2;
-          next[DALET] = AO + 3;
-          break;
-
-        case "ש":
-          // nonlinear mix
-          next[ALEF] = a * a + b;
-          next[BET]  = b * b + g;
-          next[GIMEL] = g * g + d;
-          next[DALET] = d * d + a;
-          break;
-
-        case "ת":
-          // rotate quartet (g,d,a,b)
-          next[ALEF] = g;
-          next[BET]  = d;
-          next[GIMEL] = a;
-          next[DALET] = b;
-          break;
-
-        default:
-          // ignore anything that isn't a base letter
-          return state;
-      }
-
-      return { regs: next };
-    }
-
-    function runProgram(program, opts) {
-      opts = opts || {};
-      const trace = [];
-      let state = createState();
-      const maxSteps = opts.maxSteps ?? 10000;
-
-      let steps = 0;
-      let executedOps = "";
-
-      for (const ch of program) {
-        if (HEBREW_LETTERS.includes(ch)) {
-          if (opts.trace) {
-            trace.push(cloneState(state)); // before op
-          }
-          state = step(state, ch);
-          executedOps += ch;
-          steps++;
-          if (steps >= maxSteps) break;
-        }
-      }
-
-      if (opts.trace) {
-        trace.push(cloneState(state)); // after last
-      }
-
-      return { final: state, trace, steps, executedOps };
-    }
-
-    // ==== UI WIRING ======================================================
-    function renderRegisters(state, tbody) {
-      const regs = state.regs;
-      const rows = [];
-
-      for (let i = 0; i < regs.length; i++) {
-        const name = REGISTER_NAMES[i] ?? ("r" + i);
-        const isGlobal = i === AO_INDEX;
-        rows.push(
-          `<tr>
-            <td class="reg-name ${isGlobal ? "global" : ""}">${name}</td>
-            <td class="value-cell">${i}</td>
-            <td class="value-cell">${regs[i]}</td>
-          </tr>`
-        );
-      }
-
-      tbody.innerHTML = rows.join("");
-    }
-
-    function renderTrace(result, traceListEl) {
-      const { trace, executedOps } = result;
-
-      if (!executedOps || !trace || trace.length === 0) {
-        traceListEl.innerHTML = "<li>No executable letters א–ת were found.</li>";
-        return;
-      }
-
-      const items = [];
-      const maxShown = 64;
-      const stepsToShow = Math.min(executedOps.length, maxShown);
-
-      for (let i = 0; i < stepsToShow; i++) {
-        const op = executedOps[i];
-        const stateAfter = trace[i + 1] || trace[trace.length - 1];
-        const r = stateAfter.regs;
-
-        const a = r[ALEF];
-        const b = r[BET];
-        const g = r[GIMEL];
-        const d = r[DALET];
-        const A = r[AO_INDEX];
-
-        items.push(
-          `<li><code>[${i + 1}] ${op}</code> → א=${a}, ב=${b}, ג=${g}, ד=${d}, A=${A}</li>`
-        );
-      }
-
-      if (executedOps.length > maxShown) {
-        items.push(
-          `<li>… (${executedOps.length - maxShown} additional steps not shown)</li>`
-        );
-      }
-
-      traceListEl.innerHTML = items.join("");
-    }
-
-    function setup() {
-      const programEl = document.getElementById("program");
-      const runBtn = document.getElementById("runBtn");
-      const registersBody = document.getElementById("registersBody");
-      const stepsCount = document.getElementById("stepsCount");
-      const lastProgram = document.getElementById("lastProgram");
-      const traceList = document.getElementById("traceList");
-
-      if (!programEl || !runBtn || !registersBody || !stepsCount || !lastProgram || !traceList) {
-        console.error("Missing UI elements");
-        return;
-      }
-
-      if (!programEl.value.trim()) {
-        programEl.value = "אבבגת";
-      }
-
-      const runOnce = () => {
-        const src = programEl.value || "";
-        const result = runProgram(src, { trace: true });
-        renderRegisters(result.final, registersBody);
-        renderTrace(result, traceList);
-        stepsCount.textContent = String(result.steps);
-        lastProgram.textContent = result.executedOps || "(no valid letters)";
-      };
-
-      runBtn.addEventListener("click", runOnce);
-      programEl.addEventListener("keydown", (ev) => {
-        if ((ev.ctrlKey || ev.metaKey) && ev.key === "Enter") {
-          ev.preventDefault();
-          runOnce();
-        }
+    // Collect state
+    function collectState() {
+      const state = new Array(23).fill(0);
+      grid.querySelectorAll("input").forEach(input => {
+        const idx = Number(input.dataset.index);
+        state[idx] = Number(input.value) || 0;
       });
-
-      runOnce();
+      return state;
     }
 
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", setup);
-    } else {
-      setup();
+    // Reset
+    function resetState() {
+      grid.querySelectorAll("input").forEach(input => {
+        input.value = "0";
+      });
+      output.textContent = "(state will appear here)";
     }
+
+    document.getElementById("runBtn").addEventListener("click", () => {
+      const state = collectState();
+      output.textContent =
+        "Initial IvritCode State (R⁽²³⁾):\n\n" +
+        JSON.stringify(state, null, 2);
+    });
+
+    document.getElementById("resetBtn").addEventListener("click", resetState);
   </script>
 </body>
 </html>
