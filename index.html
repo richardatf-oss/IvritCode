@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>IvritCode v1.0 — Register Console</title>
+  <title>IvritCode v1.0 — Register Console & Engine</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
@@ -21,16 +21,21 @@
       letter-spacing: 0.04em;
     }
 
+    h2 {
+      margin-top: 2rem;
+      font-weight: 500;
+    }
+
     .subtitle {
       color: #9aa0b4;
-      margin-bottom: 2rem;
+      margin-bottom: 1.5rem;
     }
 
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
       gap: 0.75rem;
-      margin-bottom: 2rem;
+      margin-bottom: 1.5rem;
     }
 
     .cell {
@@ -63,11 +68,30 @@
       background: #1b1a10;
     }
 
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.2fr);
+      gap: 1.5rem;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      background: #0f1115;
+      color: #ffffff;
+      border: 1px solid #2a2f3a;
+      border-radius: 6px;
+      padding: 0.75rem;
+      font-family: "Noto Sans Hebrew", system-ui, sans-serif;
+      font-size: 1rem;
+      resize: vertical;
+    }
+
     .actions {
       display: flex;
       gap: 1rem;
       align-items: center;
-      margin-bottom: 1.5rem;
+      margin: 1rem 0 1.5rem;
     }
 
     button {
@@ -96,31 +120,79 @@
       overflow-x: auto;
       font-size: 0.9rem;
       color: #d0d6ff;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .note {
+      font-size: 0.85rem;
+      color: #a0a6b8;
+      margin-top: 0.25rem;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 
 <body>
-  <h1>IvritCode — Register Initialization</h1>
+  <h1>IvritCode — Register Initialization & Engine</h1>
   <div class="subtitle">
-    Seed the 22 letter-registers (א–ת) and Aleph-Olam (A) before execution.
+    Seed the 22 letter-registers (א–ת) and Aleph-Olam (A), enter a program, and execute the base IvritCode letter semantics.
   </div>
 
-  <div id="registerGrid" class="grid"></div>
+  <div class="layout">
+    <!-- Left: Registers & Program -->
+    <div>
+      <h2>Registers (State Vector R²³)</h2>
+      <div id="registerGrid" class="grid"></div>
 
-  <div class="actions">
-    <button id="runBtn">Assemble State</button>
-    <button id="resetBtn" class="secondary">Reset</button>
+      <h2>Program</h2>
+      <textarea id="programInput"
+        placeholder="Enter IvritCode program here using letters א–ת.&#10;For now, niqqud and trop are ignored by the engine and will be added later."></textarea>
+      <div class="note">
+        Only the base letters א–ת are interpreted as instructions; all other characters are currently ignored.
+      </div>
+
+      <div class="actions">
+        <button id="runBtn">Run Program</button>
+        <button id="resetBtn" class="secondary">Reset</button>
+      </div>
+    </div>
+
+    <!-- Right: Output -->
+    <div>
+      <h2>Execution Trace</h2>
+      <pre id="output">(trace and final state will appear here)</pre>
+    </div>
   </div>
-
-  <pre id="output">(state will appear here)</pre>
 
   <script>
+    // --- Core constants ------------------------------------------------------
+
     // Hebrew alphabet (22 letters)
     const LETTERS = "אבגדהוזחטיכלמנסעפצקרשת".split("");
 
+    // Map from letter to index 0..21
+    const LETTER_INDEX = new Map(LETTERS.map((ch, idx) => [ch, idx]));
+
+    // Indices for Aleph-Olam (A)
+    const INDEX_A = 22;
+
+    // Role binding (default): α→א(0), β→ב(1), γ→ג(2), δ→ד(3)
+    const ROLE_ALPHA = 0;
+    const ROLE_BETA  = 1;
+    const ROLE_GAMMA = 2;
+    const ROLE_DELTA = 3;
+
+    // --- UI setup ------------------------------------------------------------
+
     const grid = document.getElementById("registerGrid");
     const output = document.getElementById("output");
+    const programInput = document.getElementById("programInput");
 
     // Build letter register inputs
     LETTERS.forEach((letter, i) => {
@@ -140,11 +212,10 @@
     aCell.className = "cell global";
     aCell.innerHTML = `
       <label>A</label>
-      <input type="number" value="0" data-index="22" />
+      <input type="number" value="0" data-index="${INDEX_A}" />
     `;
     grid.appendChild(aCell);
 
-    // Collect state
     function collectState() {
       const state = new Array(23).fill(0);
       grid.querySelectorAll("input").forEach(input => {
@@ -154,22 +225,281 @@
       return state;
     }
 
-    // Reset
-    function resetState() {
+    function setState(state) {
+      grid.querySelectorAll("input").forEach(input => {
+        const idx = Number(input.dataset.index);
+        const value = state[idx] ?? 0;
+        input.value = String(value);
+      });
+    }
+
+    function resetUI() {
       grid.querySelectorAll("input").forEach(input => {
         input.value = "0";
       });
-      output.textContent = "(state will appear here)";
+      programInput.value = "";
+      output.textContent = "(trace and final state will appear here)";
     }
 
+    // --- VM core: base letter semantics -------------------------------------
+
+    function cloneState(state) {
+      return state.slice();
+    }
+
+    /**
+     * Apply one base-letter instruction to the given state (in-place).
+     * This currently implements only the unmodified base semantics (no niqqud, no trop).
+     */
+    function applyLetterOp(letter, state) {
+      const idx = LETTER_INDEX.get(letter);
+      if (idx == null) return; // ignore unknown
+
+      const aIdx = ROLE_ALPHA;
+      const bIdx = ROLE_BETA;
+      const gIdx = ROLE_GAMMA;
+      const dIdx = ROLE_DELTA;
+
+      const a = state[aIdx];
+      const b = state[bIdx];
+      const g = state[gIdx];
+      const d = state[dIdx];
+      const AO = state[INDEX_A];
+
+      switch (letter) {
+        case "א": {
+          // Identity: no-op
+          break;
+        }
+        case "ב": {
+          // Bet: Addition, g' = a + b
+          state[gIdx] = a + b;
+          break;
+        }
+        case "ג": {
+          // Gimel: Multiplication, d' = a * b
+          state[dIdx] = a * b;
+          break;
+        }
+        case "ד": {
+          // Dalet: Difference pair
+          state[gIdx] = b - a;
+          state[dIdx] = a - b;
+          break;
+        }
+        case "ה": {
+          // Hei: sign(a) into register of Hei (index of ה)
+          const heiIndex = LETTER_INDEX.get("ה");
+          let sign = 0;
+          if (a > 0) sign = 1;
+          else if (a < 0) sign = -1;
+          state[heiIndex] = sign;
+          break;
+        }
+        case "ו": {
+          // Vav: swap α and β
+          const tmp = state[aIdx];
+          state[aIdx] = state[bIdx];
+          state[bIdx] = tmp;
+          break;
+        }
+        case "ז": {
+          // Zayin: increment α
+          state[aIdx] = a + 1;
+          break;
+        }
+        case "ח": {
+          // Chet: decrement α
+          state[aIdx] = a - 1;
+          break;
+        }
+        case "ט": {
+          // Tet: square α into γ
+          state[gIdx] = a * a;
+          break;
+        }
+        case "י": {
+          // Yod: load A into α
+          state[aIdx] = AO;
+          break;
+        }
+        case "כ": {
+          // Kaf: quartet sum into A
+          state[INDEX_A] = a + b + g + d;
+          break;
+        }
+        case "ל": {
+          // Lamed: global sum of letter registers into A
+          let sum = 0;
+          for (let i = 0; i < 22; i++) sum += state[i];
+          state[INDEX_A] = sum;
+          break;
+        }
+        case "מ": {
+          // Mem: mean of quartet into γ
+          const mean = Math.floor((a + b + g + d) / 4);
+          state[gIdx] = mean;
+          break;
+        }
+        case "נ": {
+          // Nun: negate α
+          state[aIdx] = -a;
+          break;
+        }
+        case "ס": {
+          // Samekh: rotate 22 letter registers
+          const prev = state.slice(0, 22);
+          for (let i = 0; i < 22; i++) {
+            const from = (i - 1 + 22) % 22;
+            state[i] = prev[from];
+          }
+          // A unchanged
+          break;
+        }
+        case "ע": {
+          // Ayin: dot product of halves into A
+          let sum = 0;
+          // u0..u10 = r0..r10; v0..v10 = r11..r21
+          for (let i = 0; i <= 10; i++) {
+            const u = state[i];
+            const v = state[i + 11];
+            sum += u * v;
+          }
+          state[INDEX_A] = sum;
+          break;
+        }
+        case "פ": {
+          // Pe: expose α into A
+          state[INDEX_A] = a;
+          break;
+        }
+        case "צ": {
+          // Tsadi: compare α and β to A
+          let sign = 0;
+          if (a > b) sign = 1;
+          else if (a < b) sign = -1;
+          state[INDEX_A] = sign;
+          break;
+        }
+        case "ק": {
+          // Qof: mirror letter registers, A unchanged
+          const prev = state.slice(0, 22);
+          for (let i = 0; i < 22; i++) {
+            state[i] = prev[21 - i];
+          }
+          break;
+        }
+        case "ר": {
+          // Resh: reseed quartet from A
+          state[aIdx] = AO;
+          state[bIdx] = AO + 1;
+          state[gIdx] = AO + 2;
+          state[dIdx] = AO + 3;
+          break;
+        }
+        case "ש": {
+          // Shin: nonlinear mix on roles
+          const newA = a * a + b;
+          const newB = b * b + g;
+          const newG = g * g + d;
+          const newD = d * d + a;
+          state[aIdx] = newA;
+          state[bIdx] = newB;
+          state[gIdx] = newG;
+          state[dIdx] = newD;
+          break;
+        }
+        case "ת": {
+          // Tav: rotate quartet
+          const newA = g;
+          const newB = d;
+          const newG = a;
+          const newD = b;
+          state[aIdx] = newA;
+          state[bIdx] = newB;
+          state[gIdx] = newG;
+          state[dIdx] = newD;
+          break;
+        }
+        default: {
+          // Should not happen; unknown letters are ignored
+          break;
+        }
+      }
+    }
+
+    /**
+     * Run a base IvritCode program consisting of letters א–ת.
+     * Ignores niqqud and trop for now.
+     */
+    function runProgram(initialState, program, maxSteps = 1000) {
+      const state = cloneState(initialState);
+      const instructions = [];
+
+      // Extract only base letters א–ת as opcodes
+      for (const ch of program) {
+        if (LETTER_INDEX.has(ch)) {
+          instructions.push(ch);
+        }
+      }
+
+      const trace = [];
+      const steps = Math.min(instructions.length, maxSteps);
+
+      for (let i = 0; i < steps; i++) {
+        const letter = instructions[i];
+        const before = cloneState(state);
+        applyLetterOp(letter, state);
+        const after = cloneState(state);
+
+        trace.push({
+          index: i,
+          letter,
+          before,
+          after
+        });
+      }
+
+      return { finalState: state, trace };
+    }
+
+    // --- Hook up UI actions --------------------------------------------------
+
     document.getElementById("runBtn").addEventListener("click", () => {
-      const state = collectState();
-      output.textContent =
-        "Initial IvritCode State (R⁽²³⁾):\n\n" +
-        JSON.stringify(state, null, 2);
+      const initialState = collectState();
+      const program = programInput.value || "";
+
+      const { finalState, trace } = runProgram(initialState, program, 1000);
+
+      // Update the UI inputs to show final state
+      setState(finalState);
+
+      if (trace.length === 0) {
+        output.textContent =
+          "No executable letters (א–ת) found in program.\n\n" +
+          "Initial and final state are identical:\n\n" +
+          JSON.stringify(initialState, null, 2);
+        return;
+      }
+
+      let text = "Initial State R(23):\n";
+      text += JSON.stringify(initialState, null, 2) + "\n\n";
+
+      text += "Execution Trace (base letters only; niqqud/trop ignored for now):\n\n";
+
+      for (const step of trace) {
+        text += `Step ${step.index} — Letter: ${step.letter}\n`;
+        text += "  Before: " + JSON.stringify(step.before) + "\n";
+        text += "  After:  " + JSON.stringify(step.after) + "\n\n";
+      }
+
+      text += "Final State R(23):\n";
+      text += JSON.stringify(finalState, null, 2);
+
+      output.textContent = text;
     });
 
-    document.getElementById("resetBtn").addEventListener("click", resetState);
+    document.getElementById("resetBtn").addEventListener("click", resetUI);
   </script>
 </body>
 </html>
