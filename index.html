@@ -2,845 +2,802 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>IvritCode v1.0 — Register Console & Engine</title>
-
+  <title>IvritCode v1.0 — Aleph-Olam Engine</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
+  <meta
+    name="description"
+    content="IvritCode is a deterministic symbolic engine where Hebrew letters (א–ת) act as operators over 23 registers (א–ת + Aleph-Olam A), evolving in base 22."
+  />
   <style>
+    :root {
+      --bg: #050711;
+      --bg-alt: #0c101f;
+      --fg: #f7f7ff;
+      --accent: #ffd54a;
+      --accent-soft: rgba(255, 213, 74, 0.12);
+      --border: #252a3d;
+      --muted: #9ca3c7;
+      --mono: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular,
+        Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      --radius-lg: 14px;
+      --radius-sm: 8px;
+    }
+
+    * { box-sizing: border-box; }
+
     body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #0f1115;
-      color: #eaeaf0;
       margin: 0;
-      padding: 1.5rem;
+      padding: 0;
+      font-family: var(--sans);
+      background: radial-gradient(circle at top, #18213d 0, #050711 45%, #020308 100%);
+      color: var(--fg);
+      min-height: 100vh;
     }
 
-    h1 {
-      margin-top: 0;
-      font-weight: 600;
-      letter-spacing: 0.04em;
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    a:hover { text-decoration: underline; }
+
+    .page {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
     }
 
-    h2 {
-      margin-top: 2rem;
-      font-weight: 500;
+    header {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 16px 20px;
+      border-radius: var(--radius-lg);
+      background: linear-gradient(135deg, #101427, #050711);
+      border: 1px solid var(--border);
+      box-shadow: 0 18px 40px rgba(0,0,0,0.6);
     }
 
-    .subtitle {
-      color: #9aa0b4;
-      margin-bottom: 1.5rem;
+    header h1 {
+      margin: 0;
+      font-size: 1.7rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
     }
 
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-      gap: 0.75rem;
-      margin-bottom: 1.5rem;
+    header h1 span.he {
+      font-size: 1.4rem;
+      color: var(--accent);
+      font-weight: 700;
     }
 
-    .cell {
-      background: #181b22;
-      border: 1px solid #2a2f3a;
-      border-radius: 6px;
-      padding: 0.5rem;
-      text-align: center;
-    }
-
-    .cell label {
-      display: block;
-      font-size: 1.1rem;
-      margin-bottom: 0.25rem;
-    }
-
-    .cell input {
-      width: 100%;
-      background: #0f1115;
-      color: #ffffff;
-      border: 1px solid #3a3f4b;
-      border-radius: 4px;
-      padding: 0.25rem;
+    header p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 70ch;
       font-size: 0.95rem;
-      text-align: center;
-    }
-
-    .cell.global {
-      border-color: #c9a227;
-      background: #1b1a10;
+      line-height: 1.5;
     }
 
     .layout {
       display: grid;
-      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.1fr);
-      gap: 1.5rem;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.6fr) minmax(0, 1.2fr);
+      gap: 18px;
+    }
+    @media (max-width: 1040px) {
+      .layout { grid-template-columns: minmax(0, 1fr); }
+    }
+
+    .card {
+      border-radius: var(--radius-lg);
+      background: var(--bg-alt);
+      border: 1px solid var(--border);
+      padding: 14px 16px 16px;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.45);
+    }
+
+    .card h2 {
+      margin: 0 0 8px;
+      font-size: 1rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .card h3 {
+      margin: 8px 0 6px;
+      font-size: 0.95rem;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .card p {
+      margin: 4px 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .card ul {
+      margin: 4px 0 4px 18px;
+      padding: 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .card li { margin: 2px 0; }
+
+    .pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 213, 74, 0.4);
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .row label {
+      font-size: 0.85rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .row label span.right {
+      font-size: 0.75rem;
+      opacity: 0.8;
+    }
+
+    textarea,
+    input[type="number"] {
+      width: 100%;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: #050714;
+      color: var(--fg);
+      padding: 8px 10px;
+      font-family: var(--mono);
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    textarea:focus,
+    input[type="number"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(255,213,74,0.4);
+      background: #07091a;
     }
 
     textarea {
-      width: 100%;
-      min-height: 120px;
-      background: #0f1115;
-      color: #ffffff;
-      border: 1px solid #2a2f3a;
-      border-radius: 6px;
-      padding: 0.75rem;
-      font-family: "Noto Sans Hebrew", system-ui, sans-serif;
-      font-size: 1rem;
+      min-height: 96px;
       resize: vertical;
     }
 
-    .actions {
+    input[type="number"] {
+      text-align: center;
+      -moz-appearance: textfield;
+    }
+
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .register-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .cell {
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: #06081a;
+      padding: 6px;
       display: flex;
-      gap: 1rem;
-      align-items: center;
-      margin: 1rem 0 1.5rem;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .cell.global {
+      grid-column: span 4;
+      border-color: var(--accent);
+      background: radial-gradient(circle at top, #2b2540 0, #06081a 50%);
+    }
+
+    .cell label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    .cell label span.index {
+      font-size: 0.7rem;
+      opacity: 0.7;
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
     }
 
     button {
-      background: #2c6bed;
-      color: #ffffff;
-      border: none;
-      border-radius: 6px;
-      padding: 0.6rem 1.2rem;
-      font-size: 1rem;
+      border-radius: 999px;
+      border: 1px solid var(--accent);
+      background: radial-gradient(circle at top, #ffe18a 0, #f6c640 40%, #f9b93a 100%);
+      color: #222;
+      font-weight: 600;
+      padding: 7px 16px;
+      font-size: 0.85rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
       cursor: pointer;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
 
     button.secondary {
-      background: #3a3f4b;
+      background: transparent;
+      color: var(--muted);
+      border-color: var(--border);
+      box-shadow: none;
     }
 
     button:hover {
-      filter: brightness(1.1);
+      filter: brightness(1.04);
+      box-shadow: 0 8px 22px rgba(0,0,0,0.7);
+    }
+
+    button.secondary:hover {
+      border-color: var(--accent);
+      color: var(--accent);
     }
 
     pre {
-      background: #0b0d12;
-      border: 1px solid #2a2f3a;
-      border-radius: 6px;
-      padding: 1rem;
-      overflow-x: auto;
-      font-size: 0.9rem;
-      color: #d0d6ff;
+      margin: 6px 0 0;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      background: #050714;
+      border: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      line-height: 1.5;
+      max-height: 360px;
+      overflow: auto;
       white-space: pre-wrap;
-      word-break: break-word;
+      word-wrap: break-word;
     }
 
-    .note {
-      font-size: 0.85rem;
-      color: #a0a6b8;
-      margin-top: 0.25rem;
-    }
-
-    .right-pane {
-      display: grid;
-      grid-template-rows: auto auto auto;
-      gap: 1rem;
-    }
-
-    .opcode-reference {
-      background: #0b0d12;
-      border: 1px solid #2a2f3a;
-      border-radius: 6px;
-      padding: 0.75rem;
-      max-height: 180px;
+    .opcode-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 6px;
+      max-height: 260px;
       overflow-y: auto;
-      font-size: 0.85rem;
     }
 
     .opcode-item {
-      margin-bottom: 0.35rem;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      font-size: 0.85rem;
+      color: var(--muted);
     }
 
-    .opcode-item span.letter {
+    .opcode-item .letter {
+      font-size: 1rem;
+      color: var(--accent);
+      min-width: 1.6rem;
+      text-align: center;
+    }
+
+    .opcode-item .name {
       font-weight: 600;
-      margin-right: 0.25rem;
+      color: #eaeafc;
+      min-width: 4.5rem;
     }
 
-    .opcode-item span.name {
-      color: #f0d16a;
-      margin-right: 0.25rem;
+    .opcode-item .summary {
+      flex: 1;
+      opacity: 0.9;
     }
 
-    .opcode-item span.summary {
-      color: #c0c6da;
+    .note {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 4px;
     }
 
-    @media (max-width: 900px) {
-      .layout {
-        grid-template-columns: 1fr;
-      }
+    footer {
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 12px;
+      opacity: 0.8;
     }
   </style>
 </head>
-
 <body>
-  <h1>IvritCode — Register Console & Base Engine</h1>
-  <div class="subtitle">
-    Seed the 22 letter-registers (א–ת) and Aleph-Olam (A), enter a program, and see what each IvritCode letter does —
-    numerically and Kabbalistically.
-  </div>
+  <div class="page">
+    <header>
+      <h1>
+        <span class="he">אִבְרִיתְקוֹד</span>
+        IvritCode v1.0 — Aleph-Olam Engine
+      </h1>
+      <p>
+        IvritCode is a deterministic symbolic engine in which the 22 Hebrew letters
+        (א–ת) act as <strong>operators</strong> over a 23-register state vector
+        (א–ת plus Aleph-Olam <code>A</code>), evolving entirely in base&nbsp;22.
+        Letters are instructions, registers are storage; niqqud and cantillation
+        are reserved for future modifiers and structural syntax.
+      </p>
+    </header>
 
-  <div class="layout">
-    <!-- Left: Registers & Program -->
-    <div>
-      <h2>Registers (State Vector R²³)</h2>
-      <div id="registerGrid" class="grid"></div>
+    <div class="layout">
+      <!-- LEFT: explanation -->
+      <section class="card">
+        <span class="pill">How this engine works</span>
+        <h2>State · Letters · Base&nbsp;22</h2>
+        <p>
+          The machine state <code>R</code> is a vector of 23 registers:
+          <strong>22 letter-registers א…ת</strong> and the global register
+          <strong>A (Aleph-Olam)</strong>. Each register stores a single digit
+          in base&nbsp;22: a number in <code>0..21</code>.
+        </p>
 
-      <h2>Program</h2>
-      <textarea id="programInput"
-        placeholder="Enter IvritCode program here using letters א–ת.&#10;For now, niqqud and trop are ignored by the engine and will be added later."></textarea>
-      <div class="note">
-        Only the base letters א–ת are interpreted as instructions; all other characters are currently ignored.
-      </div>
+        <h3>Execution</h3>
+        <ul>
+          <li>Set the registers below to choose the <strong>initial state</strong> <code>R(0)</code>.</li>
+          <li>Type a program of Hebrew letters (א–ת) in the text area.</li>
+          <li>
+            On <strong>Run Program</strong>, the engine:
+            <ul>
+              <li>extracts only IvritCode letters (א–ת),</li>
+              <li>applies each letter as an operator on the full state, in order,</li>
+              <li>records every step in the execution trace,</li>
+              <li>produces a final state <code>R(n)</code>.</li>
+            </ul>
+          </li>
+        </ul>
 
-      <div class="actions">
-        <button id="runBtn">Run Program</button>
-        <button id="resetBtn" class="secondary">Reset</button>
-      </div>
-    </div>
+        <h3>Arithmetic (Base&nbsp;22)</h3>
+        <p>
+          All arithmetic happens in <code>ℤ<sub>22</sub></code>. After every
+          operation, values are reduced modulo 22, so every register always
+          stays in <code>0..21</code>.
+        </p>
+        <p class="note">
+          Example: if a letter computes <code>r[i] + 1</code> and the current
+          value is <code>21</code>, the new value becomes <code>0</code>.
+        </p>
 
-    <!-- Right: Output + Opcode Reference + Kabbalah -->
-    <div class="right-pane">
-      <div>
-        <h2>Execution Trace</h2>
-        <pre id="output">(trace and final state will appear here)</pre>
-      </div>
+        <h3>Letters as Operators</h3>
+        <p>
+          Each Hebrew letter is an <strong>opcode</strong>. For example:
+        </p>
+        <ul>
+          <li><strong>ב Bet</strong> — adds the first half of the alphabet into the second half, pairwise.</li>
+          <li><strong>ל Lamed</strong> — sums all letter-registers into <code>A</code> and recenters them around the mean.</li>
+          <li><strong>ש Shin</strong> — performs a nonlinear mix in blocks of four letters.</li>
+        </ul>
+        <p class="note">
+          The right-hand panel lists all opcodes with short descriptions.
+        </p>
+      </section>
 
-      <div>
-        <h2>Opcode Reference (Base Letters)</h2>
-        <div id="opcodeRef" class="opcode-reference"></div>
-      </div>
+      <!-- CENTER: console -->
+      <section class="card">
+        <span class="pill">Engine console</span>
+        <h2>Registers &amp; Program</h2>
 
-      <div>
-        <h2>Kabbalistic Commentary</h2>
+        <div class="row">
+          <label>
+            Initial Registers (א–ת &amp; A)
+            <span class="right">values in base&nbsp;22 (0–21)</span>
+          </label>
+          <div id="registerGrid" class="register-grid">
+            <!-- filled by script -->
+          </div>
+        </div>
+
+        <div class="row">
+          <label for="programInput">
+            Program text
+            <span class="right">only letters א–ת are executed; other characters are ignored.</span>
+          </label>
+          <textarea
+            id="programInput"
+            placeholder="Example: בראשית or בבלש..."
+            dir="rtl"
+          ></textarea>
+        </div>
+
+        <div class="controls">
+          <button id="runBtn" type="button">▶ Run Program</button>
+          <button id="resetBtn" type="button" class="secondary">⟳ Reset</button>
+        </div>
+
+        <div class="row">
+          <label>
+            Execution trace &amp; final state
+            <span class="right">for debugging and learning the opcodes.</span>
+          </label>
+          <pre id="output">(trace and final state will appear here)</pre>
+        </div>
+      </section>
+
+      <!-- RIGHT: opcodes & commentary -->
+      <section class="card">
+        <span class="pill">Opcodes &amp; meanings</span>
+        <h2>Letters as Instructions</h2>
+        <p>
+          This list summarizes what each letter does in the v1.0 core semantics.
+          All operations are 23-wide: they touch the whole alphabet, not just a
+          small “working quartet”.
+        </p>
+        <div id="opcodeRef" class="opcode-list"></div>
+
+        <h3>Kabbalistic Commentary</h3>
+        <p>
+          The engine also computes a <strong>non-executing commentary</strong>:
+          program gematria, global movement of the letters, and the motion of
+          Aleph-Olam <code>A</code>. This is symbolic interpretation only; it
+          does not influence execution.
+        </p>
         <pre id="kabbalahOutput">(gematria and symbolic breakdown will appear here)</pre>
-      </div>
+
+        <p class="note">
+          Niqqud (vowel points) and cantillation marks are currently ignored by
+          the core engine, but are reserved for future versions as instruction
+          modifiers and structural syntax. The present implementation treats
+          only the base letters (א–ת) as opcodes.
+        </p>
+      </section>
     </div>
+
+    <footer>
+      IvritCode v1.0 · 23 registers · base-22 arithmetic · letters as operators.
+      Commentary is interpretive only and does not alter program behavior.
+    </footer>
   </div>
 
+  <!-- Core VM (global IvritVM) -->
+  <script src="./src/vm.js"></script>
+
+  <!-- UI wiring -->
   <script>
-    // --- Core constants ------------------------------------------------------
-
-    // Hebrew alphabet (22 letters)
-    const LETTERS = "אבגדהוזחטיכלמנסעפצקרשת".split("");
-
-    // Map from letter to index 0..21
-    const LETTER_INDEX = new Map(LETTERS.map((ch, idx) => [ch, idx]));
-
-    // Indices for Aleph-Olam (A)
-    const INDEX_A = 22;
-
-    // Role binding (default): α→א(0), β→ב(1), γ→ג(2), δ→ד(3)
-    const ROLE_ALPHA = 0;
-    const ROLE_BETA  = 1;
-    const ROLE_GAMMA = 2;
-    const ROLE_DELTA = 3;
-
-    // Standard Mispar Hechrechi gematria
-    const GEMATRIA = {
-      "א": 1,   "ב": 2,   "ג": 3,   "ד": 4,   "ה": 5,
-      "ו": 6,   "ז": 7,   "ח": 8,   "ט": 9,   "י": 10,
-      "כ": 20,  "ך": 20,  "ל": 30,  "מ": 40,  "ם": 40,
-      "נ": 50,  "ן": 50,  "ס": 60,  "ע": 70,  "פ": 80,
-      "ף": 80,  "צ": 90,  "ץ": 90,  "ק": 100, "ר": 200,
-      "ש": 300, "ת": 400
-    };
-
-    // Human-readable info for each opcode
-    const OPCODE_INFO = {
-      "א": {
-        name: "Alef",
-        summary: "Identity (no-op)",
-        detail: "Does nothing to the registers; often used as a frame marker."
-      },
-      "ב": {
-        name: "Bet",
-        summary: "Addition",
-        detail: "Adds register א (alpha) and ב (beta), stores result in ג (gamma)."
-      },
-      "ג": {
-        name: "Gimel",
-        summary: "Multiplication",
-        detail: "Multiplies registers א (alpha) and ב (beta), stores result in ד (delta)."
-      },
-      "ד": {
-        name: "Dalet",
-        summary: "Difference pair",
-        detail: "Computes ג = ב − א and ד = א − ב."
-      },
-      "ה": {
-        name: "Hei",
-        summary: "Sign of α",
-        detail: "Writes sign(א) into register ה: 1 if א>0, 0 if א=0, −1 if א<0."
-      },
-      "ו": {
-        name: "Vav",
-        summary: "Swap α and β",
-        detail: "Swaps the values of א (alpha) and ב (beta)."
-      },
-      "ז": {
-        name: "Zayin",
-        summary: "Increment α",
-        detail: "Increments register א (alpha) by 1."
-      },
-      "ח": {
-        name: "Chet",
-        summary: "Decrement α",
-        detail: "Decrements register א (alpha) by 1."
-      },
-      "ט": {
-        name: "Tet",
-        summary: "Square α into γ",
-        detail: "Squares register א (alpha) and stores the result into ג (gamma)."
-      },
-      "י": {
-        name: "Yod",
-        summary: "Load A into α",
-        detail: "Loads Aleph-Olam (A) into register א (alpha)."
-      },
-      "כ": {
-        name: "Kaf",
-        summary: "Quartet sum → A",
-        detail: "Sums א, ב, ג, ד and stores the total into A."
-      },
-      "ל": {
-        name: "Lamed",
-        summary: "Global sum → A",
-        detail: "Sums all 22 letter registers (א–ת) and stores the total into A."
-      },
-      "מ": {
-        name: "Mem",
-        summary: "Quartet mean → γ",
-        detail: "Computes the integer mean of א, ב, ג, ד and writes it into ג."
-      },
-      "נ": {
-        name: "Nun",
-        summary: "Negate α",
-        detail: "Replaces register א (alpha) with its negation."
-      },
-      "ס": {
-        name: "Samekh",
-        summary: "Rotate letters",
-        detail: "Cyclically rotates the 22 letter registers one step; A unchanged."
-      },
-      "ע": {
-        name: "Ayin",
-        summary: "Dot product → A",
-        detail: "Dot product of א..כ with ל..ת; writes sum into A."
-      },
-      "פ": {
-        name: "Pe",
-        summary: "Expose α → A",
-        detail: "Copies register א (alpha) into A."
-      },
-      "צ": {
-        name: "Tsadi",
-        summary: "Compare α and β → A",
-        detail: "Compares א and ב: writes 1 to A if א>ב, 0 if equal, −1 if א<ב."
-      },
-      "ק": {
-        name: "Qof",
-        summary: "Mirror letters",
-        detail: "Reverses the order of the 22 letter registers; A unchanged."
-      },
-      "ר": {
-        name: "Resh",
-        summary: "Reseed quartet from A",
-        detail: "Sets א=A, ב=A+1, ג=A+2, ד=A+3."
-      },
-      "ש": {
-        name: "Shin",
-        summary: "Nonlinear mix",
-        detail: "Applies: א'=א²+ב, ב'=ב²+ג, ג'=ג²+ד, ד'=ד²+א."
-      },
-      "ת": {
-        name: "Tav",
-        summary: "Rotate quartet",
-        detail: "Rotates roles: א←ג, ב←ד, ג←א, ד←ב."
-      }
-    };
-
-    // --- UI setup ------------------------------------------------------------
-
-    const grid = document.getElementById("registerGrid");
-    const output = document.getElementById("output");
-    const programInput = document.getElementById("programInput");
-    const opcodeRef = document.getElementById("opcodeRef");
-    const kabbalahOutput = document.getElementById("kabbalahOutput");
-
-    // Build letter register inputs
-    LETTERS.forEach((letter, i) => {
-      const cell = document.createElement("div");
-      cell.className = "cell";
-
-      cell.innerHTML = `
-        <label>${letter}</label>
-        <input type="number" value="0" data-index="${i}" />
-      `;
-
-      grid.appendChild(cell);
-    });
-
-    // Aleph-Olam (A)
-    const aCell = document.createElement("div");
-    aCell.className = "cell global";
-    aCell.innerHTML = `
-      <label>A</label>
-      <input type="number" value="0" data-index="${INDEX_A}" />
-    `;
-    grid.appendChild(aCell);
-
-    // Build opcode reference list
-    function renderOpcodeReference() {
-      const frag = document.createDocumentFragment();
-      LETTERS.forEach(letter => {
-        const info = OPCODE_INFO[letter];
-        if (!info) return;
-        const div = document.createElement("div");
-        div.className = "opcode-item";
-        div.innerHTML = `
-          <span class="letter">${letter}</span>
-          <span class="name">${info.name}</span>
-          <span class="summary">— ${info.summary}</span>
-        `;
-        div.title = info.detail;
-        frag.appendChild(div);
-      });
-      opcodeRef.innerHTML = "";
-      opcodeRef.appendChild(frag);
-    }
-    renderOpcodeReference();
-
-    function collectState() {
-      const state = new Array(23).fill(0);
-      grid.querySelectorAll("input").forEach(input => {
-        const idx = Number(input.dataset.index);
-        state[idx] = Number(input.value) || 0;
-      });
-      return state;
-    }
-
-    function setState(state) {
-      grid.querySelectorAll("input").forEach(input => {
-        const idx = Number(input.dataset.index);
-        const value = state[idx] ?? 0;
-        input.value = String(value);
-      });
-    }
-
-    function resetUI() {
-      grid.querySelectorAll("input").forEach(input => {
-        input.value = "0";
-      });
-      programInput.value = "";
-      output.textContent = "(trace and final state will appear here)";
-      kabbalahOutput.textContent = "(gematria and symbolic breakdown will appear here)";
-    }
-
-    // --- VM core: base letter semantics -------------------------------------
-
-    function cloneState(state) {
-      return state.slice();
-    }
-
-    function applyLetterOp(letter, state) {
-      const idx = LETTER_INDEX.get(letter);
-      if (idx == null) return; // ignore unknown
-
-      const aIdx = ROLE_ALPHA;
-      const bIdx = ROLE_BETA;
-      const gIdx = ROLE_GAMMA;
-      const dIdx = ROLE_DELTA;
-
-      const a = state[aIdx];
-      const b = state[bIdx];
-      const g = state[gIdx];
-      const d = state[dIdx];
-      const AO = state[INDEX_A];
-
-      switch (letter) {
-        case "א": {
-          break;
-        }
-        case "ב": {
-          state[gIdx] = a + b;
-          break;
-        }
-        case "ג": {
-          state[dIdx] = a * b;
-          break;
-        }
-        case "ד": {
-          state[gIdx] = b - a;
-          state[dIdx] = a - b;
-          break;
-        }
-        case "ה": {
-          const heiIndex = LETTER_INDEX.get("ה");
-          let sign = 0;
-          if (a > 0) sign = 1;
-          else if (a < 0) sign = -1;
-          state[heiIndex] = sign;
-          break;
-        }
-        case "ו": {
-          const tmp = state[aIdx];
-          state[aIdx] = state[bIdx];
-          state[bIdx] = tmp;
-          break;
-        }
-        case "ז": {
-          state[aIdx] = a + 1;
-          break;
-        }
-        case "ח": {
-          state[aIdx] = a - 1;
-          break;
-        }
-        case "ט": {
-          state[gIdx] = a * a;
-          break;
-        }
-        case "י": {
-          state[aIdx] = AO;
-          break;
-        }
-        case "כ": {
-          state[INDEX_A] = a + b + g + d;
-          break;
-        }
-        case "ל": {
-          let sum = 0;
-          for (let i = 0; i < 22; i++) sum += state[i];
-          state[INDEX_A] = sum;
-          break;
-        }
-        case "מ": {
-          const mean = Math.floor((a + b + g + d) / 4);
-          state[gIdx] = mean;
-          break;
-        }
-        case "נ": {
-          state[aIdx] = -a;
-          break;
-        }
-        case "ס": {
-          const prev = state.slice(0, 22);
-          for (let i = 0; i < 22; i++) {
-            const from = (i - 1 + 22) % 22;
-            state[i] = prev[from];
-          }
-          break;
-        }
-        case "ע": {
-          let sum = 0;
-          for (let i = 0; i <= 10; i++) {
-            const u = state[i];
-            const v = state[i + 11];
-            sum += u * v;
-          }
-          state[INDEX_A] = sum;
-          break;
-        }
-        case "פ": {
-          state[INDEX_A] = a;
-          break;
-        }
-        case "צ": {
-          let sign = 0;
-          if (a > b) sign = 1;
-          else if (a < b) sign = -1;
-          state[INDEX_A] = sign;
-          break;
-        }
-        case "ק": {
-          const prev = state.slice(0, 22);
-          for (let i = 0; i < 22; i++) {
-            state[i] = prev[21 - i];
-          }
-          break;
-        }
-        case "ר": {
-          state[aIdx] = AO;
-          state[bIdx] = AO + 1;
-          state[gIdx] = AO + 2;
-          state[dIdx] = AO + 3;
-          break;
-        }
-        case "ש": {
-          const newA = a * a + b;
-          const newB = b * b + g;
-          const newG = g * g + d;
-          const newD = d * d + a;
-          state[aIdx] = newA;
-          state[bIdx] = newB;
-          state[gIdx] = newG;
-          state[dIdx] = newD;
-          break;
-        }
-        case "ת": {
-          const newA = g;
-          const newB = d;
-          const newG = a;
-          const newD = b;
-          state[aIdx] = newA;
-          state[bIdx] = newB;
-          state[gIdx] = newG;
-          state[dIdx] = newD;
-          break;
-        }
-        default: {
-          break;
-        }
-      }
-    }
-
-    function runProgram(initialState, program, maxSteps = 1000) {
-      const state = cloneState(initialState);
-      const instructions = [];
-
-      for (const ch of program) {
-        if (LETTER_INDEX.has(ch)) {
-          instructions.push(ch);
-        }
-      }
-
-      const trace = [];
-      const steps = Math.min(instructions.length, maxSteps);
-
-      for (let i = 0; i < steps; i++) {
-        const letter = instructions[i];
-        const before = cloneState(state);
-        applyLetterOp(letter, state);
-        const after = cloneState(state);
-
-        trace.push({
-          index: i,
-          letter,
-          before,
-          after
-        });
-      }
-
-      return { finalState: state, trace, instructions };
-    }
-
-    // --- Helper: explain step changes ---------------------------------------
-
-    function explainStep(step) {
-      const { letter, before, after, index } = step;
-      const info = OPCODE_INFO[letter] || {};
-      const name = info.name || "?";
-      const summary = info.summary || "";
-      const detail = info.detail || "";
-
-      let text = "";
-      text += `Step ${index} — Letter ${letter} (${name}): ${summary}\n`;
-      if (detail) {
-        text += `  ${detail}\n`;
-      }
-
-      // Find which registers changed
-      const changes = [];
-      for (let i = 0; i < after.length; i++) {
-        if (before[i] !== after[i]) {
-          const regName = i === INDEX_A ? "A" : LETTERS[i];
-          changes.push({
-            index: i,
-            regName,
-            before: before[i],
-            after: after[i]
-          });
-        }
-      }
-
-      if (changes.length === 0) {
-        text += "  No registers changed.\n\n";
-        return text;
-      }
-
-      text += "  Changes:\n";
-      for (const c of changes) {
-        text += `    ${c.regName} (index ${c.index}): ${c.before} → ${c.after}\n`;
-      }
-      text += "\n";
-
-      return text;
-    }
-
-    // --- Kabbalistic commentary ---------------------------------------------
-
-    function computeProgramGematria(instructions) {
-      let total = 0;
-      const perLetter = [];
-      instructions.forEach(ch => {
-        const value = GEMATRIA[ch] ?? 0;
-        total += value;
-        perLetter.push({ letter: ch, value });
-      });
-      return { total, perLetter };
-    }
-
-    function sumLetters(state) {
-      let sum = 0;
-      for (let i = 0; i < 22; i++) sum += state[i];
-      return sum;
-    }
-
-    function interpretNumber(n) {
-      // Very small, symbolic dictionary
-      switch (n) {
-        case 1: return "1 — אחד (echad): unity, Keter, the indivisible source.";
-        case 2: return "2 — duality, giver/receiver, upper/lower, heaven/earth.";
-        case 3: return "3 — tiferet of a line: thesis–antithesis–synthesis.";
-        case 4: return "4 — דלת (dalet): structure, directions, the house’s frame.";
-        case 5: return "5 — ה (hei): revelation, window, the breath that opens.";
-        case 6: return "6 — ו (vav): connection, the hook between realms.";
-        case 7: return "7 — ז (zayin): struggle and Shabbat; sword and rest.";
-        case 8: return "8 — ח (chet): beyond nature, the doorway past 7.";
-        case 9: return "9 — ט (tet): hidden goodness, concealed within form.";
-        case 10: return "10 — י (yod): point of creation, seed of all expansion.";
-        case 12: return "12 — tribes, configuration of wholeness in time/space.";
-        case 13: return "13 — אחד / אהבה (echad/ahavah): oneness through love.";
-        case 18: return "18 — חי (chai): life-force, living motion.";
-        case 22: return "22 — the full Aleph-Bet, all channels open.";
-        case 26: return "26 — value of the Tetragrammaton (Havayah) in gematria.";
-        case 32: return "32 — ל\"ב נתיבות חכמה: thirty-two paths of Wisdom.";
-        case 40: return "40 — מ (mem): waters, transition, womb, forty days.";
-        case 50: return "50 — שערי בינה (gates of Binah), jubilee, transcendence.";
-        default:
-          if (n <= 0) return `${n} — movement into contraction / concealment.`;
-          if (n > 400) return `${n} — composite light (sum of many letters).`;
-          return `${n} — a composite value; can be factored into letter-gates.`;
-      }
-    }
-
-    function generateKabbalisticCommentary(initialState, finalState, instructions) {
-      if (!instructions || instructions.length === 0) {
-        return "No IvritCode letters (א–ת) were executed, so no Kabbalistic pattern was written into the state.";
-      }
-
-      let text = "";
-
-      // 1. Program gematria
-      const { total, perLetter } = computeProgramGematria(instructions);
-      text += "Program Gematria:\n";
-      text += "  Letters: " + instructions.join("") + "\n";
-      text += "  Breakdown:\n";
-      perLetter.forEach(item => {
-        if (!item.letter) return;
-        const value = item.value;
-        text += `    ${item.letter}: ${value}\n`;
-      });
-      text += `  Total gematria of program: ${total}\n`;
-      text += "  Interpretation: " + interpretNumber(total) + "\n\n";
-
-      // 2. Global movement of the letters
-      const sumInit = sumLetters(initialState);
-      const sumFinal = sumLetters(finalState);
-      const deltaLetters = sumFinal - sumInit;
-
-      text += "Letter-Registers (א–ת) — Global Movement:\n";
-      text += `  Initial sum of letters: ${sumInit}\n`;
-      text += `  Final sum of letters:   ${sumFinal}\n`;
-      text += `  Change (Δ):             ${deltaLetters}\n`;
-      if (deltaLetters !== 0) {
-        text += "  Reading: the total 'weight of letters' ";
-        text += deltaLetters > 0
-          ? "increased — an intensification of expressed light.\n"
-          : "decreased — a contraction or focusing of the light.\n";
-        text += "  Δ Interpretation: " + interpretNumber(Math.abs(deltaLetters)) + "\n\n";
-      } else {
-        text += "  Reading: the total weight is unchanged — transformation by rearrangement rather than net gain/loss.\n\n";
-      }
-
-      // 3. Aleph-Olam movement
-      const aInit = initialState[INDEX_A];
-      const aFinal = finalState[INDEX_A];
-      const deltaA = aFinal - aInit;
-
-      text += "Aleph-Olam (A) — Global Register:\n";
-      text += `  Initial A: ${aInit}\n`;
-      text += `  Final A:   ${aFinal}\n`;
-      text += `  Change (ΔA): ${deltaA}\n`;
-
-      if (deltaA !== 0) {
-        text += deltaA > 0
-          ? "  Reading: Aleph-Olam accumulated additional content from the letters.\n"
-          : "  Reading: Aleph-Olam released or exposed content back into the letters.\n";
-        text += "  |ΔA| Interpretation: " + interpretNumber(Math.abs(deltaA)) + "\n\n";
-      } else {
-        text += "  Reading: A remained numerically the same — the global seed was consulted, but not displaced.\n\n";
-      }
-
-      // 4. Quartet focus (א, ב, ג, ד)
-      const qNames = ["א", "ב", "ג", "ד"];
-      text += "Working Quartet (α, β, γ, δ) = (א, ב, ג, ד):\n";
-      qNames.forEach((name, idx) => {
-        const before = initialState[idx];
-        const after = finalState[idx];
-        if (before === after) {
-          text += `  ${name}: ${before} → ${after} (no net change)\n`;
-        } else {
-          const diff = after - before;
-          text += `  ${name}: ${before} → ${after} (Δ=${diff})\n`;
-        }
-      });
-      text += "\n";
-
-      // 5. Soft narrative summary
-      text += "Narrative Sketch:\n";
-      text += "  • The program’s gematria defines an overall 'tone' or intention.\n";
-      text += "  • The change in the sum of the letters (א–ת) reflects how much of that tone became structured in the vessels.\n";
-      text += "  • The movement in A (Aleph-Olam) shows how the hidden global register was either loaded from, or poured into, the visible letters.\n";
-      text += "  • The quartet (א,ב,ג,ד) reveals where the primary computation and mixing of that light took place.\n";
-
-      return text;
-    }
-
-    // --- Hook up UI actions --------------------------------------------------
-
-    document.getElementById("runBtn").addEventListener("click", () => {
-      const initialState = collectState();
-      const program = programInput.value || "";
-
-      const { finalState, trace, instructions } = runProgram(initialState, program, 1000);
-
-      // Update UI with final state
-      setState(finalState);
-
-      if (trace.length === 0) {
-        output.textContent =
-          "No executable letters (א–ת) found in program.\n\n" +
-          "Initial and final state are identical:\n\n" +
-          JSON.stringify(initialState, null, 2);
-        kabbalahOutput.textContent =
-          "No IvritCode letters (א–ת) were executed, so no Kabbalistic pattern was written into the state.";
+    (function () {
+      const VM = window.IvritVM;
+      if (!VM) {
+        console.error("IvritVM not found. Make sure src/vm.js is loaded.");
         return;
       }
 
-      let text = "";
-      text += "Program (interpreted letters only):\n";
-      text += instructions.join("") + "\n\n";
+      const LETTERS = VM.LETTERS;
+      const INDEX_A = VM.INDEX_A;
 
-      text += "Initial State R(23):\n";
-      text += JSON.stringify(initialState, null, 2) + "\n\n";
+      const GEMATRIA = {
+        "א": 1, "ב": 2, "ג": 3, "ד": 4, "ה": 5,
+        "ו": 6, "ז": 7, "ח": 8, "ט": 9, "י": 10,
+        "כ": 20, "ך": 20, "ל": 30, "מ": 40, "ם": 40,
+        "נ": 50, "ן": 50, "ס": 60, "ע": 70, "פ": 80,
+        "ף": 80, "צ": 90, "ץ": 90, "ק": 100, "ר": 200,
+        "ש": 300, "ת": 400
+      };
 
-      text += "Execution Trace (base letters only; niqqud/trop ignored for now):\n\n";
-      for (const step of trace) {
-        text += explainStep(step);
+      const OPCODE_INFO = {
+        "א": { name: "Alef",  summary: "Identity / frame (no-op)" },
+        "ב": { name: "Bet",   summary: "Pairwise addition (first → second half)" },
+        "ג": { name: "Gimel", summary: "Pairwise multiplication (first → second half)" },
+        "ד": { name: "Dalet", summary: "Difference pairs across halves" },
+        "ה": { name: "Hei",   summary: "Sign map across letters, A = net sign" },
+        "ו": { name: "Vav",   summary: "Swap halves (א–כ) with (ל–ת)" },
+        "ז": { name: "Zayin", summary: "Increment all letters" },
+        "ח": { name: "Chet",  summary: "Decrement all letters" },
+        "ט": { name: "Tet",   summary: "Square all letters, A = sum of squares" },
+        "י": { name: "Yod",   summary: "Broadcast A into all letters" },
+        "כ": { name: "Kaf",   summary: "Sliding window sum (size 4)" },
+        "ל": { name: "Lamed", summary: "Global sum into A, recenter letters" },
+        "מ": { name: "Mem",   summary: "Moving average (3-point), A = mean" },
+        "נ": { name: "Nun",   summary: "Global negation (letters and A)" },
+        "ס": { name: "Samekh",summary: "Rotation by A" },
+        "ע": { name: "Ayin",  summary: "Max correlation of halves → A" },
+        "פ": { name: "Pe",    summary: "Expose Alef into A and neighbors" },
+        "צ": { name: "Tsadi", summary: "Compare halves; expose extremes" },
+        "ק": { name: "Qof",   summary: "Mirror & tilt alphabet" },
+        "ר": { name: "Resh",  summary: "Reseed from A with stride" },
+        "ש": { name: "Shin",  summary: "Nonlinear mix in quartets, A = max |r[i]|" },
+        "ת": { name: "Tav",   summary: "Quartet rotation in blocks of four" }
+      };
+
+      const grid = document.getElementById("registerGrid");
+      const programInput = document.getElementById("programInput");
+      const output = document.getElementById("output");
+      const kabbalahOutput = document.getElementById("kabbalahOutput");
+      const opcodeRef = document.getElementById("opcodeRef");
+      const runBtn = document.getElementById("runBtn");
+      const resetBtn = document.getElementById("resetBtn");
+
+      function buildRegisterGrid() {
+        if (!grid) return;
+        grid.innerHTML = "";
+        LETTERS.forEach((letter, i) => {
+          const cell = document.createElement("div");
+          cell.className = "cell";
+          cell.innerHTML = `
+            <label>${letter}<span class="index">#${i}</span></label>
+            <input type="number" value="0" data-index="${i}" />
+          `;
+          grid.appendChild(cell);
+        });
+        const aCell = document.createElement("div");
+        aCell.className = "cell global";
+        aCell.innerHTML = `
+          <label>A<span class="index">#${INDEX_A} (Aleph-Olam)</span></label>
+          <input type="number" value="0" data-index="${INDEX_A}" />
+        `;
+        grid.appendChild(aCell);
       }
 
-      text += "Final State R(23):\n";
-      text += JSON.stringify(finalState, null, 2);
+      function renderOpcodeReference() {
+        if (!opcodeRef) return;
+        opcodeRef.innerHTML = "";
+        LETTERS.forEach(letter => {
+          const info = OPCODE_INFO[letter];
+          if (!info) return;
+          const div = document.createElement("div");
+          div.className = "opcode-item";
+          div.innerHTML = `
+            <span class="letter">${letter}</span>
+            <span class="name">${info.name}</span>
+            <span class="summary">— ${info.summary}</span>
+          `;
+          opcodeRef.appendChild(div);
+        });
+      }
 
-      output.textContent = text;
+      function collectState() {
+        const state = VM.createState();
+        if (!grid) return state;
+        grid.querySelectorAll("input").forEach(input => {
+          const idx = Number(input.dataset.index);
+          const raw = Number(input.value);
+          const val = Number.isFinite(raw) ? raw : 0;
+          state[idx] = val;
+        });
+        return state;
+      }
 
-      // Kabbalistic commentary
-      const kabbalisticText = generateKabbalisticCommentary(initialState, finalState, instructions);
-      kabbalahOutput.textContent = kabbalisticText;
-    });
+      function setState(state) {
+        if (!grid) return;
+        grid.querySelectorAll("input").forEach(input => {
+          const idx = Number(input.dataset.index);
+          input.value = String(state[idx] ?? 0);
+        });
+      }
 
-    document.getElementById("resetBtn").addEventListener("click", resetUI);
+      function resetUI() {
+        if (grid) {
+          grid.querySelectorAll("input").forEach(input => (input.value = "0"));
+        }
+        if (programInput) programInput.value = "";
+        if (output) output.textContent = "(trace and final state will appear here)";
+        if (kabbalahOutput) {
+          kabbalahOutput.textContent =
+            "(gematria and symbolic breakdown will appear here)";
+        }
+      }
+
+      function explainStep(step) {
+        const letter = step.letter;
+        const info = OPCODE_INFO[letter] || {};
+        let text = "";
+        text += `Step ${step.index} — Letter ${letter} (${info.name || "?"}): ${info.summary || ""}\n`;
+
+        const changes = [];
+        for (let i = 0; i < step.after.length; i++) {
+          if (step.before[i] !== step.after[i]) {
+            const regName = i === INDEX_A ? "A" : LETTERS[i];
+            changes.push({ regName, index: i, before: step.before[i], after: step.after[i] });
+          }
+        }
+        if (changes.length === 0) {
+          text += "  No registers changed.\n\n";
+          return text;
+        }
+        text += "  Changes:\n";
+        changes.forEach(c => {
+          text += `    ${c.regName} (index ${c.index}): ${c.before} → ${c.after}\n`;
+        });
+        text += "\n";
+        return text;
+      }
+
+      function computeProgramGematria(instructions) {
+        let total = 0;
+        const perLetter = [];
+        instructions.forEach(ch => {
+          const value = GEMATRIA[ch] ?? 0;
+          total += value;
+          perLetter.push({ letter: ch, value });
+        });
+        return { total, perLetter };
+      }
+
+      function sumLetters(state) {
+        let sum = 0;
+        for (let i = 0; i < LETTERS.length; i++) sum += state[i] ?? 0;
+        return sum;
+      }
+
+      function interpretNumber(n) {
+        if (n === 1) return "1 — אחד (echad): unity, Keter, indivisible source.";
+        if (n === 2) return "2 — duality: giver/receiver, above/below.";
+        if (n === 3) return "3 — triad: thesis–antithesis–synthesis.";
+        if (n === 4) return "4 — structure, directions, dalet/door.";
+        if (n === 5) return "5 — ה: revelation, window, breath.";
+        if (n === 6) return "6 — ו: connection, hook between realms.";
+        if (n === 7) return "7 — struggle and Shabbat; sword and rest.";
+        if (n === 8) return "8 — beyond nature, the doorway past 7.";
+        if (n === 10) return "10 — י: point of creation, seed.";
+        if (n === 13) return "13 — אחד / אהבה (echad/ahavah): oneness through love.";
+        if (n === 18) return "18 — חי (chai): life-force.";
+        if (n === 22) return "22 — the full Aleph-Bet, all channels open.";
+        if (n <= 0) return n + " — movement into contraction / concealment.";
+        if (n > 400) return n + " — composite light (sum of many letters).";
+        return n + " — composite value; factor into letter-gates.";
+      }
+
+      function generateKabbalisticCommentary(initialState, finalState, instructions) {
+        if (!instructions || instructions.length === 0) {
+          return "No IvritCode letters (א–ת) were executed, so no Kabbalistic pattern was written into the state.";
+        }
+
+        let text = "";
+        const { total, perLetter } = computeProgramGematria(instructions);
+        text += "Program Gematria:\n";
+        text += "  Letters: " + instructions.join("") + "\n";
+        text += "  Breakdown:\n";
+        perLetter.forEach(item => {
+          text += `    ${item.letter}: ${item.value}\n`;
+        });
+        text += `  Total gematria of program: ${total}\n`;
+        text += "  Interpretation: " + interpretNumber(total) + "\n\n";
+
+        const sumInit = sumLetters(initialState);
+        const sumFinal = sumLetters(finalState);
+        const deltaLetters = sumFinal - sumInit;
+
+        text += "Letter-Registers (א–ת) — Global Movement:\n";
+        text += `  Initial sum of letters: ${sumInit}\n`;
+        text += `  Final sum of letters:   ${sumFinal}\n`;
+        text += `  Change (Δ):             ${deltaLetters}\n`;
+        if (deltaLetters !== 0) {
+          text += "  Reading: total 'weight of letters' ";
+          text += deltaLetters > 0
+            ? "increased — intensification of expressed light.\n"
+            : "decreased — contraction / focusing of the light.\n";
+          text += "  |Δ| Interpretation: " + interpretNumber(Math.abs(deltaLetters)) + "\n\n";
+        } else {
+          text += "  Reading: total weight unchanged — transformation by rearrangement.\n\n";
+        }
+
+        const aInit = initialState[INDEX_A];
+        const aFinal = finalState[INDEX_A];
+        const deltaA = aFinal - aInit;
+
+        text += "Aleph-Olam (A) — Global Register:\n";
+        text += `  Initial A: ${aInit}\n`;
+        text += `  Final A:   ${aFinal}\n`;
+        text += `  Change (ΔA): ${deltaA}\n`;
+        if (deltaA !== 0) {
+          text += deltaA > 0
+            ? "  Reading: A accumulated additional content from the letters.\n"
+            : "  Reading: A released or exposed content back into the letters.\n";
+          text += "  |ΔA| Interpretation: " + interpretNumber(Math.abs(deltaA)) + "\n\n";
+        } else {
+          text += "  Reading: A stayed numerically the same — consulted, but not displaced.\n\n";
+        }
+
+        text += "Sample of State (א..ד and A):\n";
+        ["א","ב","ג","ד"].forEach((name, idx) => {
+          const before = initialState[idx];
+          const after = finalState[idx];
+          const diff = after - before;
+          text += `  ${name}: ${before} → ${after} (Δ=${diff})\n`;
+        });
+        text += `  A: ${aInit} → ${aFinal} (Δ=${deltaA})\n\n`;
+
+        text += "Narrative Sketch:\n";
+        text += "  • The program’s gematria sets an overall 'tone'.\n";
+        text += "  • The letter-sum shows how much of that tone entered the vessels.\n";
+        text += "  • The motion of A shows how the hidden global register gathered or released that tone.\n";
+
+        return text;
+      }
+
+      function handleRun() {
+        const initialState = collectState();
+        const program = programInput ? programInput.value || "" : "";
+        const result = VM.runProgram(initialState, program, 1000);
+        const finalState = result.finalState;
+        const trace = result.trace;
+        const instructions = result.instructions;
+
+        setState(finalState);
+
+        if (!output) return;
+
+        if (trace.length === 0) {
+          output.textContent =
+            "No executable letters (א–ת) were found in the program.\n\n" +
+            "Initial and final state are identical:\n\n" +
+            JSON.stringify(initialState, null, 2);
+          if (kabbalahOutput) {
+            kabbalahOutput.textContent =
+              "No IvritCode letters (א–ת) were executed, so no Kabbalistic pattern was written into the state.";
+          }
+          return;
+        }
+
+        let text = "";
+        text += "Program (interpreted letters only):\n";
+        text += instructions.join("") + "\n\n";
+        text += "Initial State R(23):\n";
+        text += JSON.stringify(initialState, null, 2) + "\n\n";
+        text += "Execution Trace:\n\n";
+        trace.forEach(step => { text += explainStep(step); });
+        text += "Final State R(23):\n";
+        text += JSON.stringify(finalState, null, 2);
+        output.textContent = text;
+
+        if (kabbalahOutput) {
+          kabbalahOutput.textContent = generateKabbalisticCommentary(
+            initialState,
+            finalState,
+            instructions
+          );
+        }
+      }
+
+      buildRegisterGrid();
+      renderOpcodeReference();
+      resetUI();
+
+      if (runBtn) runBtn.addEventListener("click", handleRun);
+      if (resetBtn) resetBtn.addEventListener("click", resetUI);
+    })();
   </script>
 </body>
 </html>
