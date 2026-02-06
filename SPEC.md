@@ -1,114 +1,326 @@
-# IvritCode — Full Language Specification  
-## SPEC.md  
-### Version 1.0 (Canonical)
+## 4. IvritCode v1.1 — 23-Wide Letter Semantics
 
-> _“The letters act.  
-> The breath shapes.  
-> The melody decides when.”_
+This section defines an alternative, 23-wide semantics for each letter operator.
 
-IvritCode is a symbolic machine language in which:
+The machine state is:
 
-- Hebrew letters (א–ת) act as **operators (instructions)**,  
-- Hebrew letters (א–ת) also name **registers (storage locations)**,  
-- **Niqqud** (vowel points) act as **instruction modifiers**, and  
-- A special register **A** represents **Aleph-Olam**, a hidden global register.
+- R = (r₀,…,r₂₁,A) ∈ ℤ²³
+- r₀…r₂₁ correspond to registers א…ת
+- A = r₂₂ is Aleph-Olam
 
-This document defines **IvritCode v1.0**, including:
+Indices for the 22 letter registers wrap modulo 22:
 
-1. Machine state and registers  
-2. Base (unmodified) semantics of each letter-operator  
-3. Niqqud (vowel) modifier semantics  
-4. Trop (cantillation) structural and control-flow semantics  
-5. The unified execution pipeline
+- prev(i) = (i − 1 + 22) mod 22  
+- next(i) = (i + 1) mod 22  
 
----
+We also refer to:
 
-## 1. Machine State
+- First half: indices 0..10 (א..כ)
+- Second half: indices 11..21 (ל..ת)
 
-### 1.1 State Space
+Unless stated otherwise, A is unchanged by the operation.
 
-The IvritCode machine state is a fixed-length vector:
-
-\[
-S \in R^{23}
-\]
-
-where \(R\) is a ring (the reference implementation uses integers; future versions may use a finite field).
-
-Write:
-
-\[
-S = (r_\text{א}, r_\text{ב}, \dots, r_\text{ת}, r_A)
-\]
-
-### 1.2 Registers
-
-There are 23 registers:
-
-- **22 letter registers**: one per Hebrew letter א–ת (indices 0–21)
-- **1 global register**: A (index 22), Aleph-Olam
-
-| Index | Name | Description                     |
-|-------|------|---------------------------------|
-| 0–21  | א–ת  | One register per Hebrew letter  |
-| 22    | A    | Aleph-Olam (hidden/global)      |
-
-The register named **A** is not a letter; it is a distinguished global register used for aggregation, inspection, and seeding.
-
-All registers are mutable unless a modifier enforces purity for a given operation.
+Each instruction L ∈ {א,…,ת} transforms the state R deterministically into R′.
 
 ---
 
-### 1.3 Roles (α, β, γ, δ)
+### א — Alef (Identity / Frame)
 
-To express base semantics cleanly, IvritCode uses **logical roles** instead of hard-wiring a “working quartet” forever:
+No-operation over the full state.
 
-- **α** — primary source
-- **β** — secondary source
-- **γ** — primary result
-- **δ** — secondary result
-
-A **role binding** maps roles to letter registers for each instruction:
-
-\[
-\text{bind} : \{\alpha, \beta, \gamma, \delta\} \to \{\text{א} \dots \text{ת}\}
-\]
-
-#### Default role binding
-
-By default (with no addressing modifiers):
-
-- α → א  
-- β → ב  
-- γ → ג  
-- δ → ד  
-
-This preserves the original “working quartet” behavior while allowing niqqud to rebind roles so that **any** register can serve as α, β, γ, δ.
-
-We also denote:
-
-- \(a = r_{\alpha}\)
-- \(b = r_{\beta}\)
-- \(g = r_{\gamma}\)
-- \(d = r_{\delta}\)
-- \(A_O = r_A\) (Aleph-Olam)
+- For all i ∈ {0..21}: r′ᵢ = rᵢ  
+- A′ = A  
 
 ---
 
-## 2. Instruction Structure
+### ב — Bet (Pairwise Addition, Halves)
 
-Each **instruction** in IvritCode is a single **letter with optional marks**:
+Pairwise addition from first half into second half.
 
-- A base letter-operator \(L \in \{\text{א}, \dots, \text{ת}\}\)
-- Zero or more **niqqud** marks attached to that letter
-- Zero or more **trop** marks attached to that letter
+For each i ∈ {0..10}:
 
-Conceptually:
+- r′ᵢ      = rᵢ
+- r′ᵢ₊₁₁ = rᵢ₊₁₁ + rᵢ
 
-```text
-Instruction = {
-  base: Letter,          // א..ת
-  niqqud: [NiqqudMark],  // vowel points and related marks
-  trop: [TropMark],      // cantillation marks
-  pos: SourceLocation    // (line/column) for debugging (optional)
-}
+A′ = A.
+
+---
+
+### ג — Gimel (Pairwise Multiplication, Halves)
+
+Pairwise multiplication from first half into second half.
+
+For each i ∈ {0..10}:
+
+- r′ᵢ      = rᵢ
+- r′ᵢ₊₁₁ = rᵢ₊₁₁ · rᵢ
+
+A′ = A.
+
+---
+
+### ד — Dalet (Difference Pair, Halves)
+
+Symmetric differences between paired registers of the two halves.
+
+For each i ∈ {0..10}, let x = rᵢ, y = rᵢ₊₁₁:
+
+- r′ᵢ      = y − x
+- r′ᵢ₊₁₁ = x − y
+
+A′ = A.
+
+---
+
+### ה — Hei (Sign Map)
+
+Write the sign of every letter register; A collects the net sign.
+
+For all i ∈ {0..21}:
+
+- r′ᵢ = sign(rᵢ) where  
+  sign(x) = 1 if x > 0, 0 if x = 0, −1 if x < 0
+
+A′ = ∑ᵢ r′ᵢ.
+
+---
+
+### ו — Vav (Swap Halves)
+
+Swap each first-half register with its partner in the second half.
+
+For each i ∈ {0..10}:
+
+- swap rᵢ ↔ rᵢ₊₁₁
+
+A′ = A.
+
+---
+
+### ז — Zayin (Increment All Letters)
+
+Increment every letter register by 1.
+
+For all i ∈ {0..21}:
+
+- r′ᵢ = rᵢ + 1
+
+A′ = A + 22 (the total increase in the sum of letters).
+
+---
+
+### ח — Chet (Decrement All Letters)
+
+Decrement every letter register by 1.
+
+For all i ∈ {0..21}:
+
+- r′ᵢ = rᵢ − 1
+
+A′ = A − 22.
+
+---
+
+### ט — Tet (Square All Letters)
+
+Square each letter register; A records the total squared “energy”.
+
+For all i ∈ {0..21}:
+
+- r′ᵢ = rᵢ²
+
+A′ = ∑ᵢ r′ᵢ.
+
+---
+
+### י — Yod (Broadcast Aleph-Olam)
+
+Broadcast A into all letter registers.
+
+For all i ∈ {0..21}:
+
+- r′ᵢ = A
+
+A′ = A.
+
+---
+
+### כ — Kaf (Sliding Window Sum of 4)
+
+Each register absorbs a windowed sum over itself and the next three letters (indices modulo 22).
+
+Let window(i) = {i, i+1, i+2, i+3} (mod 22). For all i ∈ {0..21}:
+
+- r′ᵢ = rᵢ + rₙₑₓₜ(ᵢ) + rₙₑₓₜ(ₙₑₓₜ(ᵢ)) + rₙₑₓₜ(ₙₑₓₜ(ₙₑₓₜ(ᵢ)))
+
+A′ = A.
+
+---
+
+### ל — Lamed (Global Sum & Recentering)
+
+Compute sum S and mean μ of the 22 letter registers.
+
+- S = ∑ᵢ rᵢ  
+- μ = ⌊S / 22⌋  
+
+Then:
+
+- A′ = S
+- For all i ∈ {0..21}: r′ᵢ = rᵢ − μ
+
+Thus the letters are recentered around their mean.
+
+---
+
+### מ — Mem (Moving Average)
+
+Apply a 3-point moving average over the alphabet.
+
+For all i ∈ {0..21}:
+
+- r′ᵢ = ⌊(rₚᵣₑᵥ(ᵢ) + rᵢ + rₙₑₓₜ(ᵢ)) / 3⌋
+
+A′ = ⌊(∑ᵢ r′ᵢ) / 22⌋ (average of the smoothed letters).
+
+---
+
+### נ — Nun (Global Negation)
+
+Negate all letter registers and A.
+
+For all i ∈ {0..21}:
+
+- r′ᵢ = −rᵢ
+
+A′ = −A.
+
+---
+
+### ס — Samekh (Rotation by A)
+
+Rotate the alphabet by A steps.
+
+Let k = A mod 22 (normalized into 0..21). For all i ∈ {0..21}:
+
+- r′ᵢ = r[(i − k + 22) mod 22]
+
+A′ = A.
+
+---
+
+### ע — Ayin (Correlation Between Halves)
+
+Measure alignment between first and second halves under circular shifts.
+
+First, define the dot product at shift s ∈ {0..10}:
+
+- Cₛ = ∑_{i=0}^{10} r[i] · r[(i + 11 + s) mod 22]
+
+Then:
+
+- A′ = maxₛ Cₛ
+- For all i ∈ {0..21}: r′ᵢ = rᵢ
+
+Letters are unchanged; A stores the maximum correlation.
+
+---
+
+### פ — Pe (Expose Alef Locally and Globally)
+
+Copy Alef’s register into A and into its immediate neighbors.
+
+Let Alef be index 0:
+
+- A′ = r₀
+- r′₀  = r₀          (unchanged)
+- r′₁  = r₁  + r₀   (Bet receives from Alef)
+- r′₂₁ = r₂₁ + r₀   (Tav receives from Alef)
+- All other r′ᵢ = rᵢ
+
+---
+
+### צ — Tsadi (Compare Halves and Push Extremes)
+
+Compare total weight of first and second halves.
+
+- S₁ = ∑_{i=0}^{10} rᵢ  
+- S₂ = ∑_{i=11}^{21} rᵢ  
+
+Set:
+
+- A′ =  1 if S₁ > S₂  
+- A′ =  0 if S₁ = S₂  
+- A′ = −1 if S₁ < S₂  
+
+Additionally:
+
+- If S₁ > S₂:
+  - let m = max_{i=0..10} rᵢ; set r′₀ = m (expose first-half max at Alef).
+- If S₁ < S₂:
+  - let m = max_{i=11..21} rᵢ; set r′₂₁ = m (expose second-half max at Tav).
+
+All other unchanged r′ᵢ = rᵢ.
+
+---
+
+### ק — Qof (Mirror & Tilt)
+
+Mirror the 22 letter registers and add a small index-based tilt.
+
+For all i ∈ {0..21}:
+
+- r′ᵢ = r₂₁₋ᵢ + i
+
+A′ = A.
+
+---
+
+### ר — Resh (Reseed from Aleph-Olam with Stride)
+
+Reseed all letters from A with a configurable stride taken from Bet.
+
+Let stride s = r₁ if r₁ ≠ 0, otherwise s = 1.
+
+For all i ∈ {0..21}:
+
+- r′ᵢ = A + i · s
+
+A′ = A.
+
+---
+
+### ש — Shin (Nonlinear Mix Over Alphabet)
+
+Apply the classical quartet-mix pattern blockwise across the alphabet.
+
+For each block of 4 indices (i, i+1, i+2, i+3), stepped by 4
+(e.g. 0,4,8,12,16,20; indices taken modulo 22), let:
+
+- a = rᵢ
+- b = rᵢ₊₁
+- g = rᵢ₊₂
+- d = rᵢ₊₃
+
+Then:
+
+- r′ᵢ     = a² + b
+- r′ᵢ₊₁ = b² + g
+- r′ᵢ₊₂ = g² + d
+- r′ᵢ₊₃ = d² + a
+
+After processing all blocks:
+
+- A′ = max_{i} |r′ᵢ|
+
+---
+
+### ת — Tav (Quartet Rotation Over Alphabet)
+
+Rotate each block of 4 registers in quartet fashion.
+
+For each block of 4 indices (i, i+1, i+2, i+3), stepped by 4 (mod 22):
+
+- (r′ᵢ, r′ᵢ₊₁, r′ᵢ₊₂, r′ᵢ₊₃) = (rᵢ₊₂, rᵢ₊₃, rᵢ, rᵢ₊₁)
+
+A′ = A.
