@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>IvritCode v1.0 — Aleph-Olam Engine</title>
+  <title>IvritCode v1.0 — Engine + IvritCodeGPT</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta
     name="description"
-    content="IvritCode is a deterministic symbolic engine where Hebrew letters (א–ת) act as operators over 23 registers (א–ת + Aleph-Olam A), evolving in base 22."
+    content="IvritCode is a deterministic symbolic engine where Hebrew letters (א–ת) act as operators over 23 registers (א–ת + Aleph-Olam A), evolving in base 22. IvritCodeGPT explains the numeric runs in human language."
   />
   <style>
     :root {
@@ -81,9 +81,21 @@
     header p {
       margin: 0;
       color: var(--muted);
-      max-width: 70ch;
+      max-width: 80ch;
       font-size: 0.95rem;
       line-height: 1.5;
+    }
+
+    .flowline {
+      margin-top: 6px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+    }
+
+    .flowline span {
+      color: var(--accent);
     }
 
     .layout {
@@ -339,6 +351,13 @@
       margin-top: 4px;
     }
 
+    .status-line {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 3px;
+      font-style: italic;
+    }
+
     footer {
       font-size: 0.78rem;
       color: var(--muted);
@@ -353,70 +372,87 @@
     <header>
       <h1>
         <span class="he">אִבְרִיתְקוֹד</span>
-        IvritCode v1.0 — Aleph-Olam Engine
+        IvritCode — Engine &amp; IvritCodeGPT
       </h1>
       <p>
         IvritCode is a deterministic symbolic engine in which the 22 Hebrew letters
         (א–ת) act as <strong>operators</strong> over a 23-register state vector
         (א–ת plus Aleph-Olam <code>A</code>), evolving entirely in base&nbsp;22.
-        Letters are instructions, registers are storage; niqqud and cantillation
-        are reserved for future modifiers and structural syntax.
+        IvritCodeGPT sits one step above the engine: it reads the numeric run
+        (state, trace, and instructions) and explains it in human language.
       </p>
+      <div class="flowline">
+        <span>ENGINE</span> (letters → numbers) &nbsp;→&nbsp;
+        <span>STATE</span> (R(23), trace) &nbsp;→&nbsp;
+        <span>IVRITCODEGPT</span> (numbers → narrative)
+      </div>
     </header>
 
     <div class="layout">
       <!-- LEFT: explanation -->
       <section class="card">
-        <span class="pill">How this engine works</span>
-        <h2>State · Letters · Base&nbsp;22</h2>
+        <span class="pill">Overview</span>
+        <h2>What Happens Here</h2>
+        <p>
+          There are two layers on this page:
+        </p>
+        <ul>
+          <li><strong>The IvritCode engine</strong>, which is purely numeric and deterministic.</li>
+          <li><strong>IvritCodeGPT</strong>, which looks at the finished run and <em>describes</em> it.</li>
+        </ul>
+
+        <h3>1 · The Engine (Letters → Numbers)</h3>
         <p>
           The machine state <code>R</code> is a vector of 23 registers:
           <strong>22 letter-registers א…ת</strong> and the global register
-          <strong>A (Aleph-Olam)</strong>. Each register stores a single digit
-          in base&nbsp;22: a number in <code>0..21</code>.
-        </p>
-
-        <h3>Execution</h3>
-        <ul>
-          <li>Set the registers below to choose the <strong>initial state</strong> <code>R(0)</code>.</li>
-          <li>Type a program of Hebrew letters (א–ת) in the text area.</li>
-          <li>
-            On <strong>Run Program</strong>, the engine:
-            <ul>
-              <li>extracts only IvritCode letters (א–ת),</li>
-              <li>applies each letter as an operator on the full state, in order,</li>
-              <li>records every step in the execution trace,</li>
-              <li>produces a final state <code>R(n)</code>.</li>
-            </ul>
-          </li>
-        </ul>
-
-        <h3>Arithmetic (Base&nbsp;22)</h3>
-        <p>
-          All arithmetic happens in <code>ℤ<sub>22</sub></code>. After every
-          operation, values are reduced modulo 22, so every register always
-          stays in <code>0..21</code>.
-        </p>
-        <p class="note">
-          Example: if a letter computes <code>r[i] + 1</code> and the current
-          value is <code>21</code>, the new value becomes <code>0</code>.
-        </p>
-
-        <h3>Letters as Operators</h3>
-        <p>
-          Each Hebrew letter is an <strong>opcode</strong>. For example:
+          <strong>A (Aleph-Olam)</strong>. Each register stores a digit in
+          base&nbsp;22: a number in <code>0..21</code>.
         </p>
         <ul>
-          <li><strong>ב Bet</strong> — adds the first half of the alphabet into the second half, pairwise.</li>
-          <li><strong>ל Lamed</strong> — sums all letter-registers into <code>A</code> and recenters them around the mean.</li>
-          <li><strong>ש Shin</strong> — performs a nonlinear mix in blocks of four letters.</li>
+          <li>You choose the initial register values (center panel).</li>
+          <li>You type a program of Hebrew letters (א–ת).</li>
+          <li>On <strong>Run Program</strong>, each letter acts as an operator on the entire state.</li>
+          <li>The result is a final state <code>R(n)</code> plus a full execution trace.</li>
+        </ul>
+
+        <h3>2 · Built-in Commentary (Numbers → Symbolic Stats)</h3>
+        <p>
+          After the run, the engine computes:
+        </p>
+        <ul>
+          <li>Program gematria and per-letter values.</li>
+          <li>Global movement of the letter-registers.</li>
+          <li>How Aleph-Olam <code>A</code> shifted during the run.</li>
         </ul>
         <p class="note">
-          The right-hand panel lists all opcodes with short descriptions.
+          This commentary is local and numeric: no remote calls, no GPT, just stats and
+          gentle symbolic language layered on the math.
+        </p>
+
+        <h3>3 · IvritCodeGPT (Numbers → Narrative)</h3>
+        <p>
+          When you click <strong>Ask IvritCodeGPT</strong>, the browser sends a compact
+          snapshot of the run to a backend:
+        </p>
+        <ul>
+          <li>Initial and final state <code>R(23)</code>,</li>
+          <li>The extracted program letters (א–ת only),</li>
+          <li>A capped execution trace,</li>
+          <li>And your optional question.</li>
+        </ul>
+        <p>
+          The GPT model sees only these numbers and letters. It does <em>not</em> see
+          your identity, and it does <em>not</em> drive the engine; it only talks about
+          what the engine already did.
+        </p>
+        <p class="note">
+          IvritCodeGPT is for symbolic reflection, not prediction. It can speak of
+          patterns like “emphasis on beginning/unity/connection”, but never as a
+          fortune-telling device.
         </p>
       </section>
 
-      <!-- CENTER: console -->
+      <!-- CENTER: engine console -->
       <section class="card">
         <span class="pill">Engine console</span>
         <h2>Registers &amp; Program</h2>
@@ -451,15 +487,15 @@
         <div class="row">
           <label>
             Execution trace &amp; final state
-            <span class="right">for debugging and learning the opcodes.</span>
+            <span class="right">Arabic numerals, JSON view</span>
           </label>
           <pre id="output">(trace and final state will appear here)</pre>
         </div>
       </section>
 
-      <!-- RIGHT: opcodes & commentary -->
+      <!-- RIGHT: opcodes, commentary, GPT -->
       <section class="card">
-        <span class="pill">Opcodes &amp; meanings</span>
+        <span class="pill">Opcodes &amp; Explanations</span>
         <h2>Letters as Instructions</h2>
         <p>
           This list summarizes what each letter does in the v1.0 core semantics.
@@ -468,27 +504,56 @@
         </p>
         <div id="opcodeRef" class="opcode-list"></div>
 
-        <h3>Kabbalistic Commentary</h3>
+        <h3>Kabbalistic Commentary (Local)</h3>
         <p>
-          The engine also computes a <strong>non-executing commentary</strong>:
+          After each run, IvritCode computes a <strong>local</strong> commentary:
           program gematria, global movement of the letters, and the motion of
-          Aleph-Olam <code>A</code>. This is symbolic interpretation only; it
-          does not influence execution.
+          Aleph-Olam <code>A</code>. This does not call GPT; it is entirely
+          computed in the browser.
         </p>
         <pre id="kabbalahOutput">(gematria and symbolic breakdown will appear here)</pre>
 
+        <h3 style="margin-top:10px;">IvritCodeGPT (Remote)</h3>
+        <p>
+          IvritCodeGPT reads the same numeric run and puts it into words. It does
+          not change the state, and it never predicts the future; it simply reflects
+          what your program already did to the registers.
+        </p>
+
+        <div class="status-line" id="gptStatus">
+          No run yet — run the engine once, then ask IvritCodeGPT.
+        </div>
+
+        <div class="row">
+          <label for="gptQuestion">
+            Your question to IvritCodeGPT
+            <span class="right">optional — or leave blank for a general reading</span>
+          </label>
+          <textarea
+            id="gptQuestion"
+            placeholder="Example: Explain the symbolic meaning of this run, focusing on Aleph-Olam and the strongest letters."
+          ></textarea>
+        </div>
+
+        <div class="controls" style="margin-top:6px;">
+          <button id="gptAskBtn" type="button" class="secondary">
+            ✨ Ask IvritCodeGPT
+          </button>
+        </div>
+
+        <pre id="gptAnswer">(IvritCodeGPT explanations will appear here)</pre>
+
         <p class="note">
-          Niqqud (vowel points) and cantillation marks are currently ignored by
-          the core engine, but are reserved for future versions as instruction
-          modifiers and structural syntax. The present implementation treats
-          only the base letters (א–ת) as opcodes.
+          Data sent to IvritCodeGPT: initial and final states, extracted letters,
+          a limited trace, and your question. No personal info. The response is
+          symbolic reflection only, not halacha, not medical advice, not divination.
         </p>
       </section>
     </div>
 
     <footer>
       IvritCode v1.0 · 23 registers · base-22 arithmetic · letters as operators.
-      Commentary is interpretive only and does not alter program behavior.
+      IvritCodeGPT is an explanatory layer on top of a deterministic engine.
     </footer>
   </div>
 
@@ -548,6 +613,10 @@
       const opcodeRef = document.getElementById("opcodeRef");
       const runBtn = document.getElementById("runBtn");
       const resetBtn = document.getElementById("resetBtn");
+      const gptQuestion = document.getElementById("gptQuestion");
+      const gptAnswer = document.getElementById("gptAnswer");
+      const gptAskBtn = document.getElementById("gptAskBtn");
+      const gptStatus = document.getElementById("gptStatus");
 
       function buildRegisterGrid() {
         if (!grid) return;
@@ -557,7 +626,7 @@
           cell.className = "cell";
           cell.innerHTML = `
             <label>${letter}<span class="index">#${i}</span></label>
-            <input type="number" value="0" data-index="${i}" />
+            <input type="number" value="0" min="0" max="21" data-index="${i}" />
           `;
           grid.appendChild(cell);
         });
@@ -565,7 +634,7 @@
         aCell.className = "cell global";
         aCell.innerHTML = `
           <label>A<span class="index">#${INDEX_A} (Aleph-Olam)</span></label>
-          <input type="number" value="0" data-index="${INDEX_A}" />
+          <input type="number" value="0" min="0" max="21" data-index="${INDEX_A}" />
         `;
         grid.appendChild(aCell);
       }
@@ -617,6 +686,16 @@
           kabbalahOutput.textContent =
             "(gematria and symbolic breakdown will appear here)";
         }
+        if (gptAnswer) {
+          gptAnswer.textContent =
+            "(IvritCodeGPT explanations will appear here)";
+        }
+        if (gptQuestion) gptQuestion.value = "";
+        if (gptStatus) {
+          gptStatus.textContent =
+            "No run yet — run the engine once, then ask IvritCodeGPT.";
+        }
+        window.lastIvritRun = null;
       }
 
       function explainStep(step) {
@@ -747,6 +826,50 @@
         return text;
       }
 
+      async function handleAskGPT() {
+        if (!gptAnswer) return;
+
+        const run = window.lastIvritRun;
+        if (!run) {
+          gptAnswer.textContent =
+            "Run the engine at least once before asking IvritCodeGPT, so it has a state to interpret.";
+          return;
+        }
+
+        const userQuestion = (gptQuestion && gptQuestion.value.trim()) || "";
+
+        gptAnswer.textContent = "Thinking with you… (contacting IvritCodeGPT proxy)…";
+
+        try {
+          const res = await fetch("/api/ivritcode-gpt", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              initialState: run.initialState,
+              finalState: run.finalState,
+              trace: run.trace,
+              instructions: run.instructions,
+              program: run.program,
+              question: userQuestion
+            })
+          });
+
+          if (!res.ok) {
+            const txt = await res.text();
+            gptAnswer.textContent =
+              "Error from IvritCodeGPT endpoint:\n" + res.status + " " + txt;
+            return;
+          }
+
+          const data = await res.json();
+          gptAnswer.textContent = data.answer || "(empty response)";
+        } catch (err) {
+          console.error(err);
+          gptAnswer.textContent =
+            "Failed to contact IvritCodeGPT endpoint. Check the /api/ivritcode-gpt function and network.";
+        }
+      }
+
       function handleRun() {
         const initialState = collectState();
         const program = programInput ? programInput.value || "" : "";
@@ -754,6 +877,23 @@
         const finalState = result.finalState;
         const trace = result.trace;
         const instructions = result.instructions;
+
+        // Cache for GPT
+        window.lastIvritRun = {
+          initialState,
+          finalState,
+          trace,
+          instructions,
+          program
+        };
+
+        if (gptStatus) {
+          const steps = trace.length;
+          gptStatus.textContent =
+            steps > 0
+              ? `Last run: ${steps} step(s), ${instructions.join("") || "no letters"} — you can now ask IvritCodeGPT.`
+              : `No executable letters (א–ת) found. Run again with at least one opcode letter.`;
+        }
 
         setState(finalState);
 
@@ -797,6 +937,7 @@
 
       if (runBtn) runBtn.addEventListener("click", handleRun);
       if (resetBtn) resetBtn.addEventListener("click", resetUI);
+      if (gptAskBtn) gptAskBtn.addEventListener("click", handleAskGPT);
     })();
   </script>
 </body>
