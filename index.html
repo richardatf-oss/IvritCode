@@ -2,943 +2,541 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>IvritCode v1.0 — Engine + IvritCodeGPT</title>
+  <title>IvritCode • Letter Flow Console</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta
     name="description"
-    content="IvritCode is a deterministic symbolic engine where Hebrew letters (א–ת) act as operators over 23 registers (א–ת + Aleph-Olam A), evolving in base 22. IvritCodeGPT explains the numeric runs in human language."
+    content="IvritCode — a 23-register base-22 machine where Hebrew letters are opcodes and numeric states flow back into letters, words, and gates."
   />
   <style>
     :root {
-      --bg: #050711;
-      --bg-alt: #0c101f;
-      --fg: #f7f7ff;
-      --accent: #ffd54a;
-      --accent-soft: rgba(255, 213, 74, 0.12);
-      --border: #252a3d;
-      --muted: #9ca3c7;
-      --mono: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular,
-        Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+      --bg: #050713;
+      --bg-soft: #0b0f1f;
+      --bg-panel: #12172a;
+      --accent: #f5c542;
+      --accent-soft: rgba(245, 197, 66, 0.18);
+      --accent-strong: #ffd976;
+      --text: #f6f6ff;
+      --text-soft: #c0c3e0;
+      --border-subtle: #262b40;
+      --danger: #ff6576;
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
         sans-serif;
-      --radius-lg: 14px;
-      --radius-sm: 8px;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo,
+        Consolas, "Fira Code", monospace;
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
+    html,
     body {
       margin: 0;
       padding: 0;
-      font-family: var(--sans);
-      background: radial-gradient(circle at top, #18213d 0, #050711 45%, #020308 100%);
-      color: var(--fg);
+      height: 100%;
+      background: radial-gradient(circle at top, #181c30 0, #050713 55%);
+      color: var(--text);
+      font-family: var(--font-sans);
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
       min-height: 100vh;
     }
 
-    a {
-      color: var(--accent);
-      text-decoration: none;
-    }
-    a:hover { text-decoration: underline; }
-
-    .page {
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 24px 16px 40px;
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-    }
-
     header {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      padding: 16px 20px;
-      border-radius: var(--radius-lg);
-      background: linear-gradient(135deg, #101427, #050711);
-      border: 1px solid var(--border);
-      box-shadow: 0 18px 40px rgba(0,0,0,0.6);
+      padding: 1rem 1.5rem 0.7rem;
+      border-bottom: 1px solid var(--border-subtle);
+      background:
+        radial-gradient(circle at top left, rgba(245, 197, 66, 0.1), transparent 55%),
+        linear-gradient(to right, rgba(245, 197, 66, 0.05), transparent);
     }
 
     header h1 {
       margin: 0;
       font-size: 1.7rem;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
       display: flex;
+      gap: 0.6rem;
       align-items: baseline;
-      gap: 10px;
     }
 
     header h1 span.he {
-      font-size: 1.4rem;
-      color: var(--accent);
+      font-size: 2rem;
       font-weight: 700;
+      color: var(--accent-strong);
+      letter-spacing: 0.08em;
     }
 
-    header p {
-      margin: 0;
-      color: var(--muted);
-      max-width: 80ch;
-      font-size: 0.95rem;
-      line-height: 1.5;
+    header p.tagline {
+      margin: 0.35rem 0 0.5rem;
+      font-size: 0.9rem;
+      color: var(--text-soft);
     }
 
-    .flowline {
-      margin-top: 6px;
-      font-size: 0.82rem;
-      color: var(--muted);
-      letter-spacing: 0.09em;
-      text-transform: uppercase;
+    header .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      font-size: 0.78rem;
+      color: var(--text-soft);
     }
 
-    .flowline span {
-      color: var(--accent);
+    header .meta span {
+      padding: 0.15rem 0.6rem;
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(0, 0, 0, 0.35);
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 1rem 1.5rem 1.25rem;
+      gap: 1rem;
     }
 
     .layout {
       display: grid;
-      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.6fr) minmax(0, 1.2fr);
-      gap: 18px;
+      grid-template-columns: minmax(280px, 0.9fr) minmax(320px, 1.1fr) minmax(
+          320px,
+          1.1fr
+        );
+      gap: 1rem;
+      align-items: stretch;
     }
-    @media (max-width: 1040px) {
-      .layout { grid-template-columns: minmax(0, 1fr); }
+
+    @media (max-width: 1100px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
     }
 
     .card {
-      border-radius: var(--radius-lg);
-      background: var(--bg-alt);
-      border: 1px solid var(--border);
-      padding: 14px 16px 16px;
-      box-shadow: 0 12px 28px rgba(0,0,0,0.45);
-    }
-
-    .card h2 {
-      margin: 0 0 8px;
-      font-size: 1rem;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: var(--accent);
-    }
-
-    .card h3 {
-      margin: 8px 0 6px;
-      font-size: 0.95rem;
-      letter-spacing: 0.02em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-
-    .card p {
-      margin: 4px 0;
-      font-size: 0.9rem;
-      color: var(--muted);
-      line-height: 1.5;
-    }
-
-    .card ul {
-      margin: 4px 0 4px 18px;
-      padding: 0;
-      font-size: 0.9rem;
-      color: var(--muted);
-    }
-
-    .card li { margin: 2px 0; }
-
-    .pill {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(255, 213, 74, 0.4);
-      background: var(--accent-soft);
-      color: var(--accent);
-      font-size: 0.7rem;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      margin-bottom: 6px;
-    }
-
-    .row {
+      background: var(--bg-panel);
+      border-radius: 14px;
+      border: 1px solid var(--border-subtle);
+      padding: 0.9rem 1rem 1rem;
+      box-shadow: 0 16px 34px rgba(0, 0, 0, 0.5);
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      margin-top: 6px;
+      gap: 0.6rem;
+      min-height: 0;
     }
 
-    .row label {
-      font-size: 0.85rem;
-      color: var(--muted);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .row label span.right {
-      font-size: 0.75rem;
-      opacity: 0.8;
-    }
-
-    textarea,
-    input[type="number"] {
-      width: 100%;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--border);
-      background: #050714;
-      color: var(--fg);
-      padding: 8px 10px;
-      font-family: var(--mono);
-      font-size: 0.9rem;
-      outline: none;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
-    }
-
-    textarea:focus,
-    input[type="number"]:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 1px rgba(255,213,74,0.4);
-      background: #07091a;
-    }
-
-    textarea {
-      min-height: 96px;
-      resize: vertical;
-    }
-
-    input[type="number"] {
-      text-align: center;
-      -moz-appearance: textfield;
-    }
-
-    input::-webkit-outer-spin-button,
-    input::-webkit-inner-spin-button {
-      -webkit-appearance: none;
-      margin: 0;
-    }
-
-    .register-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 8px;
-      margin-top: 8px;
-    }
-
-    .cell {
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--border);
-      background: #06081a;
-      padding: 6px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .cell.global {
-      grid-column: span 4;
-      border-color: var(--accent);
-      background: radial-gradient(circle at top, #2b2540 0, #06081a 50%);
-    }
-
-    .cell label {
-      font-size: 0.8rem;
-      color: var(--muted);
+    .card-header {
       display: flex;
       justify-content: space-between;
       align-items: baseline;
-      gap: 4px;
+      gap: 0.6rem;
+      margin-bottom: 0.15rem;
     }
 
-    .cell label span.index {
-      font-size: 0.7rem;
-      opacity: 0.7;
+    .card-header h2 {
+      margin: 0;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: var(--accent-strong);
     }
 
-    .controls {
+    .card-header span.sub {
+      font-size: 0.8rem;
+      color: var(--text-soft);
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.86rem;
+      line-height: 1.45;
+      color: var(--text-soft);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 150px;
+      resize: vertical;
+      border-radius: 10px;
+      border: 1px solid var(--border-subtle);
+      background: #090d1a;
+      color: var(--text);
+      padding: 0.6rem 0.7rem;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      line-height: 1.4;
+      outline: none;
+    }
+
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent-soft);
+    }
+
+    .hint {
+      font-size: 0.76rem;
+      color: var(--text-soft);
+    }
+
+    .hint code {
+      font-family: var(--font-mono);
+      background: rgba(0, 0, 0, 0.35);
+      padding: 0.05rem 0.35rem;
+      border-radius: 999px;
+    }
+
+    .button-row {
       display: flex;
-      gap: 8px;
-      margin-top: 10px;
       flex-wrap: wrap;
+      gap: 0.45rem;
+      margin-top: 0.4rem;
     }
 
     button {
       border-radius: 999px;
-      border: 1px solid var(--accent);
-      background: radial-gradient(circle at top, #ffe18a 0, #f6c640 40%, #f9b93a 100%);
-      color: #222;
-      font-weight: 600;
-      padding: 7px 16px;
-      font-size: 0.85rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
+      border: 1px solid var(--border-subtle);
+      background: #090d1a;
+      color: var(--text);
+      font-size: 0.8rem;
+      padding: 0.38rem 0.95rem;
       cursor: pointer;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.6);
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 0.35rem;
+      transition:
+        background 0.12s ease,
+        transform 0.06s ease,
+        border-color 0.12s ease;
     }
 
-    button.secondary {
-      background: transparent;
-      color: var(--muted);
-      border-color: var(--border);
-      box-shadow: none;
+    button.primary {
+      background: radial-gradient(circle at top, var(--accent), #e5a92b);
+      color: #241400;
+      border-color: #f4c54b;
+      font-weight: 600;
+    }
+
+    button.danger {
+      border-color: rgba(255, 101, 118, 0.8);
+      color: var(--danger);
     }
 
     button:hover {
-      filter: brightness(1.04);
-      box-shadow: 0 8px 22px rgba(0,0,0,0.7);
-    }
-
-    button.secondary:hover {
       border-color: var(--accent);
-      color: var(--accent);
     }
 
-    pre {
-      margin: 6px 0 0;
-      padding: 8px 10px;
-      border-radius: var(--radius-sm);
-      background: #050714;
-      border: 1px solid var(--border);
-      font-family: var(--mono);
-      font-size: 0.8rem;
-      line-height: 1.5;
-      max-height: 360px;
+    button:active {
+      transform: translateY(1px);
+    }
+
+    .mono {
+      font-family: var(--font-mono);
+    }
+
+    .stack {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      min-height: 0;
+    }
+
+    .shell {
+      border-radius: 10px;
+      background: radial-gradient(
+          circle at top left,
+          rgba(245, 197, 66, 0.12),
+          transparent 60%
+        ),
+        #090d1a;
+      border: 1px solid var(--border-subtle);
+      padding: 0.5rem 0.6rem;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      line-height: 1.4;
+      color: var(--text-soft);
+      max-height: 220px;
       overflow: auto;
       white-space: pre-wrap;
+    }
+
+    .shell-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 0.2rem;
+      font-size: 0.75rem;
+    }
+
+    .shell-label span.title {
+      color: var(--accent-strong);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .shell-label span.sub {
+      color: var(--text-soft);
+    }
+
+    .kv-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem 0.5rem;
+      font-size: 0.76rem;
+    }
+
+    .kv-row span {
+      padding: 0.05rem 0.45rem;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .flow-stream {
+      font-size: 1rem;
+      line-height: 1.4;
+      direction: rtl;
+      text-align: right;
       word-wrap: break-word;
     }
 
-    .opcode-list {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      margin-top: 6px;
-      max-height: 260px;
-      overflow-y: auto;
+    .flow-stream span.letter {
+      padding: 0 0.07rem;
     }
 
-    .opcode-item {
-      display: flex;
-      align-items: baseline;
-      gap: 6px;
-      font-size: 0.85rem;
-      color: var(--muted);
+    .flow-stream span.hit {
+      background: rgba(245, 197, 66, 0.18);
+      border-radius: 4px;
     }
 
-    .opcode-item .letter {
-      font-size: 1rem;
-      color: var(--accent);
-      min-width: 1.6rem;
-      text-align: center;
+    .list {
+      border-radius: 10px;
+      background: #090d1a;
+      border: 1px solid var(--border-subtle);
+      padding: 0.5rem 0.6rem;
+      font-size: 0.78rem;
+      max-height: 200px;
+      overflow: auto;
     }
 
-    .opcode-item .name {
-      font-weight: 600;
-      color: #eaeafc;
-      min-width: 4.5rem;
+    .list h3 {
+      margin: 0 0 0.25rem;
+      font-size: 0.78rem;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--text-soft);
     }
 
-    .opcode-item .summary {
-      flex: 1;
-      opacity: 0.9;
+    .list-item {
+      margin-bottom: 0.25rem;
     }
 
-    .note {
+    .list-item strong {
+      color: var(--accent-strong);
+    }
+
+    .assistant-output {
+      border-radius: 10px;
+      background: #090d1a;
+      border: 1px solid var(--border-subtle);
+      padding: 0.5rem 0.6rem;
       font-size: 0.8rem;
-      color: var(--muted);
-      margin-top: 4px;
-    }
-
-    .status-line {
-      font-size: 0.8rem;
-      color: var(--muted);
-      margin-top: 3px;
-      font-style: italic;
+      line-height: 1.45;
+      color: var(--text-soft);
+      max-height: 190px;
+      overflow: auto;
     }
 
     footer {
-      font-size: 0.78rem;
-      color: var(--muted);
-      text-align: center;
-      margin-top: 12px;
-      opacity: 0.8;
+      padding: 0.6rem 1.5rem 0.9rem;
+      border-top: 1px solid var(--border-subtle);
+      font-size: 0.75rem;
+      color: var(--text-soft);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 0.7rem;
+      background: radial-gradient(circle at bottom, #0e1324 0, transparent 55%);
+    }
+
+    footer a {
+      color: var(--accent-strong);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
 <body>
-  <div class="page">
-    <header>
-      <h1>
-        <span class="he">אִבְרִיתְקוֹד</span>
-        IvritCode — Engine &amp; IvritCodeGPT
-      </h1>
-      <p>
-        IvritCode is a deterministic symbolic engine in which the 22 Hebrew letters
-        (א–ת) act as <strong>operators</strong> over a 23-register state vector
-        (א–ת plus Aleph-Olam <code>A</code>), evolving entirely in base&nbsp;22.
-        IvritCodeGPT sits one step above the engine: it reads the numeric run
-        (state, trace, and instructions) and explains it in human language.
-      </p>
-      <div class="flowline">
-        <span>ENGINE</span> (letters → numbers) &nbsp;→&nbsp;
-        <span>STATE</span> (R(23), trace) &nbsp;→&nbsp;
-        <span>IVRITCODEGPT</span> (numbers → narrative)
-      </div>
-    </header>
+  <header>
+    <h1>
+      <span class="he">אִבְרִיתְקוֹד</span>
+      <span>IvritCode Letter Flow Console</span>
+    </h1>
+    <p class="tagline">
+      A 23-register, base-22 machine where Hebrew opcodes evolve numeric states
+      into streams of letters, words, and 231 gates.
+    </p>
+    <div class="meta">
+      <span>Base-22 registers</span>
+      <span>23 slots R₀–R₂₂ (Alef Olam global)</span>
+      <span>Letters → opcodes</span>
+      <span>Registers → letters → words</span>
+    </div>
+  </header>
 
-    <div class="layout">
-      <!-- LEFT: explanation -->
-      <section class="card">
-        <span class="pill">Overview</span>
-        <h2>What Happens Here</h2>
+  <main>
+    <section class="layout">
+      <!-- PROGRAM PANEL -->
+      <article class="card" id="program-card">
+        <div class="card-header">
+          <h2>Program</h2>
+          <span class="sub">Write IvritCode &amp; run the machine</span>
+        </div>
         <p>
-          There are two layers on this page:
-        </p>
-        <ul>
-          <li><strong>The IvritCode engine</strong>, which is purely numeric and deterministic.</li>
-          <li><strong>IvritCodeGPT</strong>, which looks at the finished run and <em>describes</em> it.</li>
-        </ul>
-
-        <h3>1 · The Engine (Letters → Numbers)</h3>
-        <p>
-          The machine state <code>R</code> is a vector of 23 registers:
-          <strong>22 letter-registers א…ת</strong> and the global register
-          <strong>A (Aleph-Olam)</strong>. Each register stores a digit in
-          base&nbsp;22: a number in <code>0..21</code>.
-        </p>
-        <ul>
-          <li>You choose the initial register values (center panel).</li>
-          <li>You type a program of Hebrew letters (א–ת).</li>
-          <li>On <strong>Run Program</strong>, each letter acts as an operator on the entire state.</li>
-          <li>The result is a final state <code>R(n)</code> plus a full execution trace.</li>
-        </ul>
-
-        <h3>2 · Built-in Commentary (Numbers → Symbolic Stats)</h3>
-        <p>
-          After the run, the engine computes:
-        </p>
-        <ul>
-          <li>Program gematria and per-letter values.</li>
-          <li>Global movement of the letter-registers.</li>
-          <li>How Aleph-Olam <code>A</code> shifted during the run.</li>
-        </ul>
-        <p class="note">
-          This commentary is local and numeric: no remote calls, no GPT, just stats and
-          gentle symbolic language layered on the math.
+          Enter a sequence of Hebrew letters (one per instruction). Comments
+          starting with <span class="mono">#</span> are ignored. Hit
+          <strong>Run</strong> to execute on the IvritCode VM.
         </p>
 
-        <h3>3 · IvritCodeGPT (Numbers → Narrative)</h3>
-        <p>
-          When you click <strong>Ask IvritCodeGPT</strong>, the browser sends a compact
-          snapshot of the run to a backend:
-        </p>
-        <ul>
-          <li>Initial and final state <code>R(23)</code>,</li>
-          <li>The extracted program letters (א–ת only),</li>
-          <li>A capped execution trace,</li>
-          <li>And your optional question.</li>
-        </ul>
-        <p>
-          The GPT model sees only these numbers and letters. It does <em>not</em> see
-          your identity, and it does <em>not</em> drive the engine; it only talks about
-          what the engine already did.
-        </p>
-        <p class="note">
-          IvritCodeGPT is for symbolic reflection, not prediction. It can speak of
-          patterns like “emphasis on beginning/unity/connection”, but never as a
-          fortune-telling device.
-        </p>
-      </section>
+        <textarea
+          id="program-input"
+          spellcheck="false"
+          placeholder="Example:
+שנבגקכעיחלצמפ
+# Each letter is an opcode; niqqud/taamim ignored for now."
+        ></textarea>
 
-      <!-- CENTER: engine console -->
-      <section class="card">
-        <span class="pill">Engine console</span>
-        <h2>Registers &amp; Program</h2>
+        <div class="hint">
+          <strong>Shortcut:</strong> <code>Ctrl+Enter</code> runs the program.
+        </div>
 
-        <div class="row">
-          <label>
-            Initial Registers (א–ת &amp; A)
-            <span class="right">values in base&nbsp;22 (0–21)</span>
-          </label>
-          <div id="registerGrid" class="register-grid">
-            <!-- filled by script -->
+        <div class="button-row">
+          <button class="primary" id="run-button">▶ Run</button>
+          <button id="sample-button">✦ Load Sample</button>
+          <button class="danger" id="reset-button">⟲ Clear</button>
+        </div>
+      </article>
+
+      <!-- STATE PANEL -->
+      <article class="card" id="state-card">
+        <div class="card-header">
+          <h2>State</h2>
+          <span class="sub">Trace &amp; 23-register snapshot</span>
+        </div>
+
+        <div class="stack">
+          <div class="shell">
+            <div class="shell-label">
+              <span class="title">Trace</span>
+              <span class="sub">VM messages</span>
+            </div>
+            <div id="trace-output">
+              Waiting. Run a program to see VM output.
+            </div>
+          </div>
+
+          <div class="shell">
+            <div class="shell-label">
+              <span class="title">Registers</span>
+              <span class="sub">R₀ … R₂₂</span>
+            </div>
+            <div id="register-output">
+              <div class="kv-row">
+                <span>No state yet.</span>
+              </div>
+            </div>
           </div>
         </div>
+      </article>
 
-        <div class="row">
-          <label for="programInput">
-            Program text
-            <span class="right">only letters א–ת are executed; other characters are ignored.</span>
-          </label>
-          <textarea
-            id="programInput"
-            placeholder="Example: בראשית or בבלש..."
-            dir="rtl"
-          ></textarea>
+      <!-- FLOW / CHAVRUTA PANEL -->
+      <article class="card" id="flow-card">
+        <div class="card-header">
+          <h2>Flow</h2>
+          <span class="sub">Letters, words, gates &amp; Chavruta</span>
         </div>
 
-        <div class="controls">
-          <button id="runBtn" type="button">▶ Run Program</button>
-          <button id="resetBtn" type="button" class="secondary">⟳ Reset</button>
-        </div>
-
-        <div class="row">
-          <label>
-            Execution trace &amp; final state
-            <span class="right">Arabic numerals, JSON view</span>
-          </label>
-          <pre id="output">(trace and final state will appear here)</pre>
-        </div>
-      </section>
-
-      <!-- RIGHT: opcodes, commentary, GPT -->
-      <section class="card">
-        <span class="pill">Opcodes &amp; Explanations</span>
-        <h2>Letters as Instructions</h2>
         <p>
-          This list summarizes what each letter does in the v1.0 core semantics.
-          All operations are 23-wide: they touch the whole alphabet, not just a
-          small “working quartet”.
-        </p>
-        <div id="opcodeRef" class="opcode-list"></div>
-
-        <h3>Kabbalistic Commentary (Local)</h3>
-        <p>
-          After each run, IvritCode computes a <strong>local</strong> commentary:
-          program gematria, global movement of the letters, and the motion of
-          Aleph-Olam <code>A</code>. This does not call GPT; it is entirely
-          computed in the browser.
-        </p>
-        <pre id="kabbalahOutput">(gematria and symbolic breakdown will appear here)</pre>
-
-        <h3 style="margin-top:10px;">IvritCodeGPT (Remote)</h3>
-        <p>
-          IvritCodeGPT reads the same numeric run and puts it into words. It does
-          not change the state, and it never predicts the future; it simply reflects
-          what your program already did to the registers.
+          Each register value is folded into base-22 and mapped back to
+          <span class="mono">א…ת</span>. From that river of letters we search for
+          words and gates. The Chavruta panel can suggest new programs.
         </p>
 
-        <div class="status-line" id="gptStatus">
-          No run yet — run the engine once, then ask IvritCodeGPT.
+        <div class="stack">
+          <!-- Letter stream -->
+          <div class="shell" style="direction: rtl; text-align: right;">
+            <div class="shell-label">
+              <span class="title">Letter Stream</span>
+              <span class="sub">Registers → א…ת (base-22)</span>
+            </div>
+            <div id="letter-stream" class="flow-stream">
+              (No flow yet. Run a program.)
+            </div>
+          </div>
+
+          <!-- Words & gates -->
+          <div style="display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 0.5rem;">
+            <div class="list" id="word-list">
+              <h3>Candidate words</h3>
+              <div class="list-item">
+                None yet. When a program runs, we’ll scan 3- to 5-letter windows.
+              </div>
+            </div>
+            <div class="list" id="gate-list">
+              <h3>231 Gates (letter pairs)</h3>
+              <div class="list-item">
+                After execution, frequent pairs (e.g., א־ב, ב־ג) appear here.
+              </div>
+            </div>
+          </div>
+
+          <!-- GPT helper -->
+          <div>
+            <p style="margin-bottom: 0.35rem;">
+              <strong>IvritCode Chavruta:</strong> describe in Hebrew or English
+              what you want the machine to do; the backend (on lumianexus.org)
+              returns suggested code plus commentary.
+            </p>
+            <textarea
+              id="gpt-input"
+              spellcheck="false"
+              placeholder="Example: &quot;Write a program that doubles R0 and stores in R1&quot; / &quot;הראה דוגמה לערבוב לא-ליניארי עם שי&quot;ן&quot;."
+              style="min-height: 80px;"
+            ></textarea>
+            <div class="button-row">
+              <button class="primary" id="gpt-send-button">✉ Ask Chavruta</button>
+              <button id="gpt-clear-button">⌫ Clear</button>
+            </div>
+            <div id="gpt-output" class="assistant-output" style="margin-top: 0.45rem;">
+              Chavruta output will appear here once the backend function is wired.
+            </div>
+          </div>
         </div>
+      </article>
+    </section>
+  </main>
 
-        <div class="row">
-          <label for="gptQuestion">
-            Your question to IvritCodeGPT
-            <span class="right">optional — or leave blank for a general reading</span>
-          </label>
-          <textarea
-            id="gptQuestion"
-            placeholder="Example: Explain the symbolic meaning of this run, focusing on Aleph-Olam and the strongest letters."
-          ></textarea>
-        </div>
-
-        <div class="controls" style="margin-top:6px;">
-          <button id="gptAskBtn" type="button" class="secondary">
-            ✨ Ask IvritCodeGPT
-          </button>
-        </div>
-
-        <pre id="gptAnswer">(IvritCodeGPT explanations will appear here)</pre>
-
-        <p class="note">
-          Data sent to IvritCodeGPT: initial and final states, extracted letters,
-          a limited trace, and your question. No personal info. The response is
-          symbolic reflection only, not halacha, not medical advice, not divination.
-        </p>
-      </section>
+  <footer>
+    <div>
+      © <span id="year"></span> IvritCode • לשם ייחוד קודשא בריך הוא ושכינתיה
     </div>
+    <div>
+      Front-end:
+      <span class="mono">index.html</span> · <span class="mono">main.js</span> |
+      Engine:
+      <span class="mono">assembler.js</span>, <span class="mono">vm.js</span>
+    </div>
+  </footer>
 
-    <footer>
-      IvritCode v1.0 · 23 registers · base-22 arithmetic · letters as operators.
-      IvritCodeGPT is an explanatory layer on top of a deterministic engine.
-    </footer>
-  </div>
-
-  <!-- Core VM (global IvritVM) -->
-  <script src="./src/vm.js"></script>
-
-  <!-- UI wiring -->
   <script>
-    (function () {
-      const VM = window.IvritVM;
-      if (!VM) {
-        console.error("IvritVM not found. Make sure src/vm.js is loaded.");
-        return;
-      }
-
-      const LETTERS = VM.LETTERS;
-      const INDEX_A = VM.INDEX_A;
-
-      const GEMATRIA = {
-        "א": 1, "ב": 2, "ג": 3, "ד": 4, "ה": 5,
-        "ו": 6, "ז": 7, "ח": 8, "ט": 9, "י": 10,
-        "כ": 20, "ך": 20, "ל": 30, "מ": 40, "ם": 40,
-        "נ": 50, "ן": 50, "ס": 60, "ע": 70, "פ": 80,
-        "ף": 80, "צ": 90, "ץ": 90, "ק": 100, "ר": 200,
-        "ש": 300, "ת": 400
-      };
-
-      const OPCODE_INFO = {
-        "א": { name: "Alef",  summary: "Identity / frame (no-op)" },
-        "ב": { name: "Bet",   summary: "Pairwise addition (first → second half)" },
-        "ג": { name: "Gimel", summary: "Pairwise multiplication (first → second half)" },
-        "ד": { name: "Dalet", summary: "Difference pairs across halves" },
-        "ה": { name: "Hei",   summary: "Sign map across letters, A = net sign" },
-        "ו": { name: "Vav",   summary: "Swap halves (א–כ) with (ל–ת)" },
-        "ז": { name: "Zayin", summary: "Increment all letters" },
-        "ח": { name: "Chet",  summary: "Decrement all letters" },
-        "ט": { name: "Tet",   summary: "Square all letters, A = sum of squares" },
-        "י": { name: "Yod",   summary: "Broadcast A into all letters" },
-        "כ": { name: "Kaf",   summary: "Sliding window sum (size 4)" },
-        "ל": { name: "Lamed", summary: "Global sum into A, recenter letters" },
-        "מ": { name: "Mem",   summary: "Moving average (3-point), A = mean" },
-        "נ": { name: "Nun",   summary: "Global negation (letters and A)" },
-        "ס": { name: "Samekh",summary: "Rotation by A" },
-        "ע": { name: "Ayin",  summary: "Max correlation of halves → A" },
-        "פ": { name: "Pe",    summary: "Expose Alef into A and neighbors" },
-        "צ": { name: "Tsadi", summary: "Compare halves; expose extremes" },
-        "ק": { name: "Qof",   summary: "Mirror & tilt alphabet" },
-        "ר": { name: "Resh",  summary: "Reseed from A with stride" },
-        "ש": { name: "Shin",  summary: "Nonlinear mix in quartets, A = max |r[i]|" },
-        "ת": { name: "Tav",   summary: "Quartet rotation in blocks of four" }
-      };
-
-      const grid = document.getElementById("registerGrid");
-      const programInput = document.getElementById("programInput");
-      const output = document.getElementById("output");
-      const kabbalahOutput = document.getElementById("kabbalahOutput");
-      const opcodeRef = document.getElementById("opcodeRef");
-      const runBtn = document.getElementById("runBtn");
-      const resetBtn = document.getElementById("resetBtn");
-      const gptQuestion = document.getElementById("gptQuestion");
-      const gptAnswer = document.getElementById("gptAnswer");
-      const gptAskBtn = document.getElementById("gptAskBtn");
-      const gptStatus = document.getElementById("gptStatus");
-
-      function buildRegisterGrid() {
-        if (!grid) return;
-        grid.innerHTML = "";
-        LETTERS.forEach((letter, i) => {
-          const cell = document.createElement("div");
-          cell.className = "cell";
-          cell.innerHTML = `
-            <label>${letter}<span class="index">#${i}</span></label>
-            <input type="number" value="0" min="0" max="21" data-index="${i}" />
-          `;
-          grid.appendChild(cell);
-        });
-        const aCell = document.createElement("div");
-        aCell.className = "cell global";
-        aCell.innerHTML = `
-          <label>A<span class="index">#${INDEX_A} (Aleph-Olam)</span></label>
-          <input type="number" value="0" min="0" max="21" data-index="${INDEX_A}" />
-        `;
-        grid.appendChild(aCell);
-      }
-
-      function renderOpcodeReference() {
-        if (!opcodeRef) return;
-        opcodeRef.innerHTML = "";
-        LETTERS.forEach(letter => {
-          const info = OPCODE_INFO[letter];
-          if (!info) return;
-          const div = document.createElement("div");
-          div.className = "opcode-item";
-          div.innerHTML = `
-            <span class="letter">${letter}</span>
-            <span class="name">${info.name}</span>
-            <span class="summary">— ${info.summary}</span>
-          `;
-          opcodeRef.appendChild(div);
-        });
-      }
-
-      function collectState() {
-        const state = VM.createState();
-        if (!grid) return state;
-        grid.querySelectorAll("input").forEach(input => {
-          const idx = Number(input.dataset.index);
-          const raw = Number(input.value);
-          const val = Number.isFinite(raw) ? raw : 0;
-          state[idx] = val;
-        });
-        return state;
-      }
-
-      function setState(state) {
-        if (!grid) return;
-        grid.querySelectorAll("input").forEach(input => {
-          const idx = Number(input.dataset.index);
-          input.value = String(state[idx] ?? 0);
-        });
-      }
-
-      function resetUI() {
-        if (grid) {
-          grid.querySelectorAll("input").forEach(input => (input.value = "0"));
-        }
-        if (programInput) programInput.value = "";
-        if (output) output.textContent = "(trace and final state will appear here)";
-        if (kabbalahOutput) {
-          kabbalahOutput.textContent =
-            "(gematria and symbolic breakdown will appear here)";
-        }
-        if (gptAnswer) {
-          gptAnswer.textContent =
-            "(IvritCodeGPT explanations will appear here)";
-        }
-        if (gptQuestion) gptQuestion.value = "";
-        if (gptStatus) {
-          gptStatus.textContent =
-            "No run yet — run the engine once, then ask IvritCodeGPT.";
-        }
-        window.lastIvritRun = null;
-      }
-
-      function explainStep(step) {
-        const letter = step.letter;
-        const info = OPCODE_INFO[letter] || {};
-        let text = "";
-        text += `Step ${step.index} — Letter ${letter} (${info.name || "?"}): ${info.summary || ""}\n`;
-
-        const changes = [];
-        for (let i = 0; i < step.after.length; i++) {
-          if (step.before[i] !== step.after[i]) {
-            const regName = i === INDEX_A ? "A" : LETTERS[i];
-            changes.push({ regName, index: i, before: step.before[i], after: step.after[i] });
-          }
-        }
-        if (changes.length === 0) {
-          text += "  No registers changed.\n\n";
-          return text;
-        }
-        text += "  Changes:\n";
-        changes.forEach(c => {
-          text += `    ${c.regName} (index ${c.index}): ${c.before} → ${c.after}\n`;
-        });
-        text += "\n";
-        return text;
-      }
-
-      function computeProgramGematria(instructions) {
-        let total = 0;
-        const perLetter = [];
-        instructions.forEach(ch => {
-          const value = GEMATRIA[ch] ?? 0;
-          total += value;
-          perLetter.push({ letter: ch, value });
-        });
-        return { total, perLetter };
-      }
-
-      function sumLetters(state) {
-        let sum = 0;
-        for (let i = 0; i < LETTERS.length; i++) sum += state[i] ?? 0;
-        return sum;
-      }
-
-      function interpretNumber(n) {
-        if (n === 1) return "1 — אחד (echad): unity, Keter, indivisible source.";
-        if (n === 2) return "2 — duality: giver/receiver, above/below.";
-        if (n === 3) return "3 — triad: thesis–antithesis–synthesis.";
-        if (n === 4) return "4 — structure, directions, dalet/door.";
-        if (n === 5) return "5 — ה: revelation, window, breath.";
-        if (n === 6) return "6 — ו: connection, hook between realms.";
-        if (n === 7) return "7 — struggle and Shabbat; sword and rest.";
-        if (n === 8) return "8 — beyond nature, the doorway past 7.";
-        if (n === 10) return "10 — י: point of creation, seed.";
-        if (n === 13) return "13 — אחד / אהבה (echad/ahavah): oneness through love.";
-        if (n === 18) return "18 — חי (chai): life-force.";
-        if (n === 22) return "22 — the full Aleph-Bet, all channels open.";
-        if (n <= 0) return n + " — movement into contraction / concealment.";
-        if (n > 400) return n + " — composite light (sum of many letters).";
-        return n + " — composite value; factor into letter-gates.";
-      }
-
-      function generateKabbalisticCommentary(initialState, finalState, instructions) {
-        if (!instructions || instructions.length === 0) {
-          return "No IvritCode letters (א–ת) were executed, so no Kabbalistic pattern was written into the state.";
-        }
-
-        let text = "";
-        const { total, perLetter } = computeProgramGematria(instructions);
-        text += "Program Gematria:\n";
-        text += "  Letters: " + instructions.join("") + "\n";
-        text += "  Breakdown:\n";
-        perLetter.forEach(item => {
-          text += `    ${item.letter}: ${item.value}\n`;
-        });
-        text += `  Total gematria of program: ${total}\n`;
-        text += "  Interpretation: " + interpretNumber(total) + "\n\n";
-
-        const sumInit = sumLetters(initialState);
-        const sumFinal = sumLetters(finalState);
-        const deltaLetters = sumFinal - sumInit;
-
-        text += "Letter-Registers (א–ת) — Global Movement:\n";
-        text += `  Initial sum of letters: ${sumInit}\n`;
-        text += `  Final sum of letters:   ${sumFinal}\n`;
-        text += `  Change (Δ):             ${deltaLetters}\n`;
-        if (deltaLetters !== 0) {
-          text += "  Reading: total 'weight of letters' ";
-          text += deltaLetters > 0
-            ? "increased — intensification of expressed light.\n"
-            : "decreased — contraction / focusing of the light.\n";
-          text += "  |Δ| Interpretation: " + interpretNumber(Math.abs(deltaLetters)) + "\n\n";
-        } else {
-          text += "  Reading: total weight unchanged — transformation by rearrangement.\n\n";
-        }
-
-        const aInit = initialState[INDEX_A];
-        const aFinal = finalState[INDEX_A];
-        const deltaA = aFinal - aInit;
-
-        text += "Aleph-Olam (A) — Global Register:\n";
-        text += `  Initial A: ${aInit}\n`;
-        text += `  Final A:   ${aFinal}\n`;
-        text += `  Change (ΔA): ${deltaA}\n`;
-        if (deltaA !== 0) {
-          text += deltaA > 0
-            ? "  Reading: A accumulated additional content from the letters.\n"
-            : "  Reading: A released or exposed content back into the letters.\n";
-          text += "  |ΔA| Interpretation: " + interpretNumber(Math.abs(deltaA)) + "\n\n";
-        } else {
-          text += "  Reading: A stayed numerically the same — consulted, but not displaced.\n\n";
-        }
-
-        text += "Sample of State (א..ד and A):\n";
-        ["א","ב","ג","ד"].forEach((name, idx) => {
-          const before = initialState[idx];
-          const after = finalState[idx];
-          const diff = after - before;
-          text += `  ${name}: ${before} → ${after} (Δ=${diff})\n`;
-        });
-        text += `  A: ${aInit} → ${aFinal} (Δ=${deltaA})\n\n`;
-
-        text += "Narrative Sketch:\n";
-        text += "  • The program’s gematria sets an overall 'tone'.\n";
-        text += "  • The letter-sum shows how much of that tone entered the vessels.\n";
-        text += "  • The motion of A shows how the hidden global register gathered or released that tone.\n";
-
-        return text;
-      }
-
-      async function handleAskGPT() {
-        if (!gptAnswer) return;
-
-        const run = window.lastIvritRun;
-        if (!run) {
-          gptAnswer.textContent =
-            "Run the engine at least once before asking IvritCodeGPT, so it has a state to interpret.";
-          return;
-        }
-
-        const userQuestion = (gptQuestion && gptQuestion.value.trim()) || "";
-
-        gptAnswer.textContent = "Thinking with you… (contacting IvritCodeGPT proxy)…";
-
-        try {
-          const res = await fetch("/api/ivritcode-gpt", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              initialState: run.initialState,
-              finalState: run.finalState,
-              trace: run.trace,
-              instructions: run.instructions,
-              program: run.program,
-              question: userQuestion
-            })
-          });
-
-          if (!res.ok) {
-            const txt = await res.text();
-            gptAnswer.textContent =
-              "Error from IvritCodeGPT endpoint:\n" + res.status + " " + txt;
-            return;
-          }
-
-          const data = await res.json();
-          gptAnswer.textContent = data.answer || "(empty response)";
-        } catch (err) {
-          console.error(err);
-          gptAnswer.textContent =
-            "Failed to contact IvritCodeGPT endpoint. Check the /api/ivritcode-gpt function and network.";
-        }
-      }
-
-      function handleRun() {
-        const initialState = collectState();
-        const program = programInput ? programInput.value || "" : "";
-        const result = VM.runProgram(initialState, program, 1000);
-        const finalState = result.finalState;
-        const trace = result.trace;
-        const instructions = result.instructions;
-
-        // Cache for GPT
-        window.lastIvritRun = {
-          initialState,
-          finalState,
-          trace,
-          instructions,
-          program
-        };
-
-        if (gptStatus) {
-          const steps = trace.length;
-          gptStatus.textContent =
-            steps > 0
-              ? `Last run: ${steps} step(s), ${instructions.join("") || "no letters"} — you can now ask IvritCodeGPT.`
-              : `No executable letters (א–ת) found. Run again with at least one opcode letter.`;
-        }
-
-        setState(finalState);
-
-        if (!output) return;
-
-        if (trace.length === 0) {
-          output.textContent =
-            "No executable letters (א–ת) were found in the program.\n\n" +
-            "Initial and final state are identical:\n\n" +
-            JSON.stringify(initialState, null, 2);
-          if (kabbalahOutput) {
-            kabbalahOutput.textContent =
-              "No IvritCode letters (א–ת) were executed, so no Kabbalistic pattern was written into the state.";
-          }
-          return;
-        }
-
-        let text = "";
-        text += "Program (interpreted letters only):\n";
-        text += instructions.join("") + "\n\n";
-        text += "Initial State R(23):\n";
-        text += JSON.stringify(initialState, null, 2) + "\n\n";
-        text += "Execution Trace:\n\n";
-        trace.forEach(step => { text += explainStep(step); });
-        text += "Final State R(23):\n";
-        text += JSON.stringify(finalState, null, 2);
-        output.textContent = text;
-
-        if (kabbalahOutput) {
-          kabbalahOutput.textContent = generateKabbalisticCommentary(
-            initialState,
-            finalState,
-            instructions
-          );
-        }
-      }
-
-      buildRegisterGrid();
-      renderOpcodeReference();
-      resetUI();
-
-      if (runBtn) runBtn.addEventListener("click", handleRun);
-      if (resetBtn) resetBtn.addEventListener("click", resetUI);
-      if (gptAskBtn) gptAskBtn.addEventListener("click", handleAskGPT);
-    })();
+    document.getElementById("year").textContent =
+      new Date().getFullYear().toString();
   </script>
+  <script type="module" src="./main.js"></script>
 </body>
 </html>
