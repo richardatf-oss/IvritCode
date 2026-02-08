@@ -1,250 +1,542 @@
-// main.js
-// Front-end glue for IvritCode Engine + GPT Chavruta.
-
-// ---- Imports --------------------------------------------------------------
-// Adjust these imports to match your actual module names/exports.
-import { assemble } from "./assembler.js";
-import { run } from "./vm.js";
-
-// If you have an explicit initial-state helper, you can import it, e.g.:
-// import { makeInitialState } from "./vm.js";
-
-// ---- DOM Helpers ----------------------------------------------------------
-
-function $(id) {
-  return document.getElementById(id);
-}
-
-const programInput = $("program-input");
-const runButton = $("run-button");
-const sampleButton = $("sample-button");
-const resetButton = $("reset-button");
-const traceOutput = $("trace-output");
-const registerOutput = $("register-output");
-
-const gptInput = $("gpt-input");
-const gptSendButton = $("gpt-send-button");
-const gptClearButton = $("gpt-clear-button");
-const gptOutput = $("gpt-output");
-
-// Basic HTML escaping so we can safely inject text into innerHTML
-function escapeHtml(str = "") {
-  return String(str).replace(/[<>&]/g, (c) => {
-    switch (c) {
-      case "<":
-        return "&lt;";
-      case ">":
-        return "&gt;";
-      case "&":
-        return "&amp;";
-      default:
-        return c;
-    }
-  });
-}
-
-// ---- IvritCode Engine Playground -----------------------------------------
-
-/**
- * Render the register array R0..R22 into the register panel.
- * @param {number[] | null} regs
- */
-function renderRegisters(regs) {
-  if (!registerOutput) return;
-
-  if (!Array.isArray(regs) || regs.length === 0) {
-    registerOutput.innerHTML =
-      '<div class="kv-row"><span>No registers yet. Run a program.</span></div>';
-    return;
-  }
-
-  const chips = regs
-    .map(
-      (val, idx) =>
-        `<span>R${idx} = ${escapeHtml(val.toString())}</span>`
-    )
-    .join("");
-
-  registerOutput.innerHTML = `<div class="kv-row">${chips}</div>`;
-}
-
-/**
- * Render a trace summary. Since the core VM may only log to console,
- * this UI string is intentionally simple.
- * @param {string} msg
- */
-function renderTrace(msg) {
-  if (!traceOutput) return;
-  traceOutput.textContent = msg;
-}
-
-/**
- * Run the current IvritCode program via assembler + VM.
- */
-async function handleRunProgram() {
-  if (!programInput) return;
-
-  const raw = programInput.value || "";
-  const letters = raw.replace(/\s+/g, "");
-
-  if (!letters) {
-    renderTrace("No program given. Type some IvritCode letters first.");
-    renderRegisters(null);
-    return;
-  }
-
-  try {
-    renderTrace("Running program… (check console for detailed trace)");
-    // Assemble the program: string → Instr[]
-    const program = assemble(letters);
-
-    // Run on the VM. VMOptions here assumes { trace?: boolean; maxSteps?: number }
-    const regs = await run(program, { trace: true, maxSteps: 1000 });
-
-    renderTrace("Done. Trace printed to console by the VM.");
-    renderRegisters(regs);
-  } catch (err) {
-    console.error("Error running IvritCode program:", err);
-    renderTrace("Error: " + String(err));
-    renderRegisters(null);
-  }
-}
-
-/**
- * Load a sample program into the textarea.
- */
-function handleLoadSample() {
-  if (!programInput) return;
-
-  programInput.value =
-    "שנבגקכעיחלצמפ\n" +
-    "# Example IvritCode program\n" +
-    "# One Hebrew letter per instruction; niqqud/taamim ignored for now.";
-
-  renderTrace("Sample program loaded. Press “Run Program”.");
-}
-
-/**
- * Reset UI state (does not reset VM internals unless you add a hook).
- */
-function handleReset() {
-  if (programInput) programInput.value = "";
-  renderTrace("Cleared program and output. VM will start fresh on next run.");
-  renderRegisters(null);
-}
-
-// Wire engine UI events
-if (runButton) {
-  runButton.addEventListener("click", () => {
-    void handleRunProgram();
-  });
-}
-
-if (sampleButton) {
-  sampleButton.addEventListener("click", handleLoadSample);
-}
-
-if (resetButton) {
-  resetButton.addEventListener("click", handleReset);
-}
-
-// Allow Ctrl+Enter inside the program textarea to run the program.
-if (programInput) {
-  programInput.addEventListener("keydown", (ev) => {
-    if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey)) {
-      ev.preventDefault();
-      void handleRunProgram();
-    }
-  });
-}
-
-// Initial render
-renderRegisters(null);
-renderTrace("Enter IvritCode letters, then press “Run Program”.");
-
-
-// ---- GPT Chavruta Helper (via LuminaNexus.org) ---------------------------
-
-// Change this if you later move the function local to this site.
-const GPT_ENDPOINT =
-  "https://lumianexus.org/.netlify/functions/ivritcode-gpt";
-
-/**
- * Ask the backend GPT helper for a code suggestion + explanation.
- */
-async function askChavruta() {
-  if (!gptInput || !gptOutput) return;
-
-  const prompt = gptInput.value.trim();
-  if (!prompt) return;
-
-  gptOutput.innerHTML = "Asking the Chavruta…";
-
-  try {
-    const res = await fetch(GPT_ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt }),
-    });
-
-    if (!res.ok) {
-      const text = await res.text();
-      gptOutput.innerHTML =
-        "Error from backend:<br><pre>" + escapeHtml(text) + "</pre>";
-      return;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>IvritCode • Letter Flow Console</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta
+    name="description"
+    content="IvritCode — a 23-register base-22 machine where Hebrew letters are opcodes and numeric states flow back into letters, words, and gates."
+  />
+  <style>
+    :root {
+      --bg: #050713;
+      --bg-soft: #0b0f1f;
+      --bg-panel: #12172a;
+      --accent: #f5c542;
+      --accent-soft: rgba(245, 197, 66, 0.18);
+      --accent-strong: #ffd976;
+      --text: #f6f6ff;
+      --text-soft: #c0c3e0;
+      --border-subtle: #262b40;
+      --danger: #ff6576;
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo,
+        Consolas, "Fira Code", monospace;
     }
 
-    const data = await res.json();
-    const code = data.code || "";
-    const explanation = data.explanation || "";
-
-    // If GPT returns code, put it into the program box as a starting point
-    if (code && programInput) {
-      programInput.value = code;
+    * {
+      box-sizing: border-box;
     }
 
-    gptOutput.innerHTML =
-      `<strong>IvritCode:</strong><br>` +
-      `<pre style="white-space: pre-wrap; margin: 0.25rem 0;">${escapeHtml(
-        code
-      )}</pre>` +
-      `<br><strong>Explanation:</strong><br>` +
-      `<div>${escapeHtml(explanation).replace(/\n/g, "<br>")}</div>`;
-  } catch (err) {
-    console.error("Error talking to Chavruta:", err);
-    gptOutput.innerHTML =
-      "Network / JS error:<br><pre>" + escapeHtml(String(err)) + "</pre>";
-  }
-}
-
-/**
- * Clear the Chavruta panel.
- */
-function clearChavruta() {
-  if (gptInput) gptInput.value = "";
-  if (gptOutput) {
-    gptOutput.innerHTML =
-      "<strong>Cleared.</strong> Ask a new question to the Chavruta.";
-  }
-}
-
-// Wire GPT UI events
-if (gptSendButton) {
-  gptSendButton.addEventListener("click", () => {
-    void askChavruta();
-  });
-}
-
-if (gptClearButton) {
-  gptClearButton.addEventListener("click", clearChavruta);
-}
-
-// Allow Ctrl+Enter in the Chavruta textarea to send.
-if (gptInput) {
-  gptInput.addEventListener("keydown", (ev) => {
-    if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey)) {
-      ev.preventDefault();
-      void askChavruta();
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: radial-gradient(circle at top, #181c30 0, #050713 55%);
+      color: var(--text);
+      font-family: var(--font-sans);
     }
-  });
-}
+
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 1rem 1.5rem 0.7rem;
+      border-bottom: 1px solid var(--border-subtle);
+      background:
+        radial-gradient(circle at top left, rgba(245, 197, 66, 0.1), transparent 55%),
+        linear-gradient(to right, rgba(245, 197, 66, 0.05), transparent);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      display: flex;
+      gap: 0.6rem;
+      align-items: baseline;
+    }
+
+    header h1 span.he {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--accent-strong);
+      letter-spacing: 0.08em;
+    }
+
+    header p.tagline {
+      margin: 0.35rem 0 0.5rem;
+      font-size: 0.9rem;
+      color: var(--text-soft);
+    }
+
+    header .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      font-size: 0.78rem;
+      color: var(--text-soft);
+    }
+
+    header .meta span {
+      padding: 0.15rem 0.6rem;
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(0, 0, 0, 0.35);
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 1rem 1.5rem 1.25rem;
+      gap: 1rem;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(280px, 0.9fr) minmax(320px, 1.1fr) minmax(
+          320px,
+          1.1fr
+        );
+      gap: 1rem;
+      align-items: stretch;
+    }
+
+    @media (max-width: 1100px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--bg-panel);
+      border-radius: 14px;
+      border: 1px solid var(--border-subtle);
+      padding: 0.9rem 1rem 1rem;
+      box-shadow: 0 16px 34px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      min-height: 0;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 0.6rem;
+      margin-bottom: 0.15rem;
+    }
+
+    .card-header h2 {
+      margin: 0;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: var(--accent-strong);
+    }
+
+    .card-header span.sub {
+      font-size: 0.8rem;
+      color: var(--text-soft);
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.86rem;
+      line-height: 1.45;
+      color: var(--text-soft);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 150px;
+      resize: vertical;
+      border-radius: 10px;
+      border: 1px solid var(--border-subtle);
+      background: #090d1a;
+      color: var(--text);
+      padding: 0.6rem 0.7rem;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      line-height: 1.4;
+      outline: none;
+    }
+
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent-soft);
+    }
+
+    .hint {
+      font-size: 0.76rem;
+      color: var(--text-soft);
+    }
+
+    .hint code {
+      font-family: var(--font-mono);
+      background: rgba(0, 0, 0, 0.35);
+      padding: 0.05rem 0.35rem;
+      border-radius: 999px;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin-top: 0.4rem;
+    }
+
+    button {
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
+      background: #090d1a;
+      color: var(--text);
+      font-size: 0.8rem;
+      padding: 0.38rem 0.95rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition:
+        background 0.12s ease,
+        transform 0.06s ease,
+        border-color 0.12s ease;
+    }
+
+    button.primary {
+      background: radial-gradient(circle at top, var(--accent), #e5a92b);
+      color: #241400;
+      border-color: #f4c54b;
+      font-weight: 600;
+    }
+
+    button.danger {
+      border-color: rgba(255, 101, 118, 0.8);
+      color: var(--danger);
+    }
+
+    button:hover {
+      border-color: var(--accent);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    .mono {
+      font-family: var(--font-mono);
+    }
+
+    .stack {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      min-height: 0;
+    }
+
+    .shell {
+      border-radius: 10px;
+      background: radial-gradient(
+          circle at top left,
+          rgba(245, 197, 66, 0.12),
+          transparent 60%
+        ),
+        #090d1a;
+      border: 1px solid var(--border-subtle);
+      padding: 0.5rem 0.6rem;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      line-height: 1.4;
+      color: var(--text-soft);
+      max-height: 220px;
+      overflow: auto;
+      white-space: pre-wrap;
+    }
+
+    .shell-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 0.2rem;
+      font-size: 0.75rem;
+    }
+
+    .shell-label span.title {
+      color: var(--accent-strong);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .shell-label span.sub {
+      color: var(--text-soft);
+    }
+
+    .kv-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem 0.5rem;
+      font-size: 0.76rem;
+    }
+
+    .kv-row span {
+      padding: 0.05rem 0.45rem;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .flow-stream {
+      font-size: 1rem;
+      line-height: 1.4;
+      direction: rtl;
+      text-align: right;
+      word-wrap: break-word;
+    }
+
+    .flow-stream span.letter {
+      padding: 0 0.07rem;
+    }
+
+    .flow-stream span.hit {
+      background: rgba(245, 197, 66, 0.18);
+      border-radius: 4px;
+    }
+
+    .list {
+      border-radius: 10px;
+      background: #090d1a;
+      border: 1px solid var(--border-subtle);
+      padding: 0.5rem 0.6rem;
+      font-size: 0.78rem;
+      max-height: 200px;
+      overflow: auto;
+    }
+
+    .list h3 {
+      margin: 0 0 0.25rem;
+      font-size: 0.78rem;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--text-soft);
+    }
+
+    .list-item {
+      margin-bottom: 0.25rem;
+    }
+
+    .list-item strong {
+      color: var(--accent-strong);
+    }
+
+    .assistant-output {
+      border-radius: 10px;
+      background: #090d1a;
+      border: 1px solid var(--border-subtle);
+      padding: 0.5rem 0.6rem;
+      font-size: 0.8rem;
+      line-height: 1.45;
+      color: var(--text-soft);
+      max-height: 190px;
+      overflow: auto;
+    }
+
+    footer {
+      padding: 0.6rem 1.5rem 0.9rem;
+      border-top: 1px solid var(--border-subtle);
+      font-size: 0.75rem;
+      color: var(--text-soft);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 0.7rem;
+      background: radial-gradient(circle at bottom, #0e1324 0, transparent 55%);
+    }
+
+    footer a {
+      color: var(--accent-strong);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>
+      <span class="he">אִבְרִיתְקוֹד</span>
+      <span>IvritCode Letter Flow Console</span>
+    </h1>
+    <p class="tagline">
+      A 23-register, base-22 machine where Hebrew opcodes evolve numeric states
+      into streams of letters, words, and 231 gates.
+    </p>
+    <div class="meta">
+      <span>Base-22 registers</span>
+      <span>23 slots R₀–R₂₂ (Alef Olam global)</span>
+      <span>Letters → opcodes</span>
+      <span>Registers → letters → words</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="layout">
+      <!-- PROGRAM PANEL -->
+      <article class="card" id="program-card">
+        <div class="card-header">
+          <h2>Program</h2>
+          <span class="sub">Write IvritCode &amp; run the machine</span>
+        </div>
+        <p>
+          Enter a sequence of Hebrew letters (one per instruction). Comments
+          starting with <span class="mono">#</span> are ignored. Hit
+          <strong>Run</strong> to execute on the IvritCode VM.
+        </p>
+
+        <textarea
+          id="program-input"
+          spellcheck="false"
+          placeholder="Example:
+שנבגקכעיחלצמפ
+# Each letter is an opcode; niqqud/taamim ignored for now."
+        ></textarea>
+
+        <div class="hint">
+          <strong>Shortcut:</strong> <code>Ctrl+Enter</code> runs the program.
+        </div>
+
+        <div class="button-row">
+          <button class="primary" id="run-button">▶ Run</button>
+          <button id="sample-button">✦ Load Sample</button>
+          <button class="danger" id="reset-button">⟲ Clear</button>
+        </div>
+      </article>
+
+      <!-- STATE PANEL -->
+      <article class="card" id="state-card">
+        <div class="card-header">
+          <h2>State</h2>
+          <span class="sub">Trace &amp; 23-register snapshot</span>
+        </div>
+
+        <div class="stack">
+          <div class="shell">
+            <div class="shell-label">
+              <span class="title">Trace</span>
+              <span class="sub">VM messages</span>
+            </div>
+            <div id="trace-output">
+              Waiting. Run a program to see VM output.
+            </div>
+          </div>
+
+          <div class="shell">
+            <div class="shell-label">
+              <span class="title">Registers</span>
+              <span class="sub">R₀ … R₂₂</span>
+            </div>
+            <div id="register-output">
+              <div class="kv-row">
+                <span>No state yet.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- FLOW / CHAVRUTA PANEL -->
+      <article class="card" id="flow-card">
+        <div class="card-header">
+          <h2>Flow</h2>
+          <span class="sub">Letters, words, gates &amp; Chavruta</span>
+        </div>
+
+        <p>
+          Each register value is folded into base-22 and mapped back to
+          <span class="mono">א…ת</span>. From that river of letters we search for
+          words and gates. The Chavruta panel can suggest new programs.
+        </p>
+
+        <div class="stack">
+          <!-- Letter stream -->
+          <div class="shell" style="direction: rtl; text-align: right;">
+            <div class="shell-label">
+              <span class="title">Letter Stream</span>
+              <span class="sub">Registers → א…ת (base-22)</span>
+            </div>
+            <div id="letter-stream" class="flow-stream">
+              (No flow yet. Run a program.)
+            </div>
+          </div>
+
+          <!-- Words & gates -->
+          <div style="display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 0.5rem;">
+            <div class="list" id="word-list">
+              <h3>Candidate words</h3>
+              <div class="list-item">
+                None yet. When a program runs, we’ll scan 3- to 5-letter windows.
+              </div>
+            </div>
+            <div class="list" id="gate-list">
+              <h3>231 Gates (letter pairs)</h3>
+              <div class="list-item">
+                After execution, frequent pairs (e.g., א־ב, ב־ג) appear here.
+              </div>
+            </div>
+          </div>
+
+          <!-- GPT helper -->
+          <div>
+            <p style="margin-bottom: 0.35rem;">
+              <strong>IvritCode Chavruta:</strong> describe in Hebrew or English
+              what you want the machine to do; the backend (on lumianexus.org)
+              returns suggested code plus commentary.
+            </p>
+            <textarea
+              id="gpt-input"
+              spellcheck="false"
+              placeholder="Example: &quot;Write a program that doubles R0 and stores in R1&quot; / &quot;הראה דוגמה לערבוב לא-ליניארי עם שי&quot;ן&quot;."
+              style="min-height: 80px;"
+            ></textarea>
+            <div class="button-row">
+              <button class="primary" id="gpt-send-button">✉ Ask Chavruta</button>
+              <button id="gpt-clear-button">⌫ Clear</button>
+            </div>
+            <div id="gpt-output" class="assistant-output" style="margin-top: 0.45rem;">
+              Chavruta output will appear here once the backend function is wired.
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <footer>
+    <div>
+      © <span id="year"></span> IvritCode • לשם ייחוד קודשא בריך הוא ושכינתיה
+    </div>
+    <div>
+      Front-end:
+      <span class="mono">index.html</span> · <span class="mono">main.js</span> |
+      Engine:
+      <span class="mono">assembler.js</span>, <span class="mono">vm.js</span>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById("year").textContent =
+      new Date().getFullYear().toString();
+  </script>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
