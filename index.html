@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta
     name="description"
-    content="IvritCode — a 23-register base-22 machine where Hebrew letters are opcodes and numeric states flow back into letters, words, and gates."
+    content="IvritCode — a 23-register, base-22 machine where Hebrew opcodes evolve numeric states into streams of letters, words, and 231 gates."
   />
   <style>
     :root {
@@ -472,7 +472,7 @@
           <div class="shell" style="direction: rtl; text-align: right;">
             <div class="shell-label">
               <span class="title">Letter Stream</span>
-              <span class="sub">Registers → א…ת (base-22)</span>
+              <span class="sub">(base-22) ℕ → א…ת × Registers</span>
             </div>
             <div id="letter-stream" class="flow-stream">
               (No flow yet. Run a program.)
@@ -527,9 +527,7 @@
     </div>
     <div>
       Front-end:
-      <span class="mono">index.html</span> · <span class="mono">main.js</span> |
-      Engine:
-      <span class="mono">assembler.js</span>, <span class="mono">vm.js</span>
+      <span class="mono">index.html</span> · <span class="mono">main.js</span>
     </div>
   </footer>
 
@@ -537,6 +535,7 @@
     document.getElementById("year").textContent =
       new Date().getFullYear().toString();
   </script>
-  <script type="module" src="./main.js"></script>
+  <!-- NOTE: no type="module" here on purpose -->
+  <script src="./main.js"></script>
 </body>
 </html>
